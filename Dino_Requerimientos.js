@@ -1,6 +1,6 @@
 // ============================================
 // DINO REQUERIMIENTOS - VERSIÓN DEFINITIVA
-// CON PANEL DE SOMBREROS EN HTML
+// CON SOMBREROS EN HTML Y PREGUNTAS ÚNICAS
 // ============================================
 
 const canvas = document.getElementById('gameCanvas');
@@ -57,7 +57,6 @@ function reiniciarProgresoCompleto(){
     juego.sombreros = JSON.parse(JSON.stringify(SOMBREROS_BASE));
     juego.record = 0;
     guardarProgreso();
-    actualizarPanelSombreros(); // refrescar panel HTML
     alert("🎮 Progreso reiniciado. Todos los coleccionables han sido bloqueados nuevamente.");
     location.reload();
 }
@@ -72,7 +71,7 @@ let juego = {
     intentos: 0,
     respuestasCorrectas: 0,
     respuestasIncorrectas: 0,
-    preguntasDisponibles: [],
+    preguntasDisponibles: [], // cola de preguntas
     modoNoche: false,
     sombreroActual: 0,
     sombreros: [],
@@ -105,58 +104,9 @@ function reiniciarPreguntasDisponibles(){
 }
 function obtenerSiguientePregunta(){
     if(juego.preguntasDisponibles.length===0) return null;
-    return juego.preguntasDisponibles.shift();
+    return juego.preguntasDisponibles.shift(); // elimina al asignar
 }
 function mostrarMensaje(texto){ mensajeTemporal=texto; temporizadorMensaje=90; }
-function cambiarSombrero(direccion){
-    const desbloq = juego.sombreros.filter(s=>s.desbloqueado);
-    if(desbloq.length===0) return;
-    let idx = desbloq.findIndex(s=>s.id===juego.sombreroActual);
-    if(idx===-1) idx=0;
-    if(direccion==='siguiente') idx = (idx+1)%desbloq.length;
-    else idx = (idx-1+desbloq.length)%desbloq.length;
-    juego.sombreroActual = desbloq[idx].id;
-    mostrarMensaje(`🎩 ${desbloq[idx].nombre} equipado`);
-    guardarProgreso();
-    actualizarPanelSombreros();
-}
-
-// ============================================
-// FUNCIONES DEL PANEL HTML DE SOMBREROS
-// ============================================
-function actualizarPanelSombreros() {
-    const contenedor = document.getElementById('sombrerosLista');
-    if (!contenedor) return;
-    contenedor.innerHTML = '';
-    juego.sombreros.forEach(s => {
-        const item = document.createElement('div');
-        item.className = `sombrero-item ${s.desbloqueado ? '' : 'bloqueado'} ${s.id === juego.sombreroActual ? 'seleccionado' : ''}`;
-        if (s.desbloqueado) {
-            item.style.cursor = 'pointer';
-            item.addEventListener('click', () => {
-                juego.sombreroActual = s.id;
-                guardarProgreso();
-                mostrarMensaje(`🎩 ${s.nombre} equipado`);
-                actualizarPanelSombreros();
-            });
-        } else {
-            item.style.cursor = 'not-allowed';
-        }
-        const emojiSpan = document.createElement('span');
-        emojiSpan.className = 'sombrero-emoji';
-        emojiSpan.textContent = s.emoji;
-        const nombreSpan = document.createElement('span');
-        nombreSpan.className = 'sombrero-nombre';
-        nombreSpan.textContent = s.nombre;
-        const estadoSpan = document.createElement('span');
-        estadoSpan.className = 'sombrero-estado';
-        estadoSpan.textContent = s.desbloqueado ? (s.id === juego.sombreroActual ? '✓' : '') : '🔒';
-        item.appendChild(emojiSpan);
-        item.appendChild(nombreSpan);
-        item.appendChild(estadoSpan);
-        contenedor.appendChild(item);
-    });
-}
 
 // ============================================
 // CLASE DINOSAURIO (con estrella)
@@ -246,7 +196,7 @@ class Dinosaurio {
 }
 
 // ============================================
-// CLASE OBSTÁCULO (sin cambios)
+// CLASE OBSTÁCULO
 // ============================================
 class Obstaculo {
     constructor(tipo, x, esInicial=false){
@@ -277,7 +227,7 @@ class Obstaculo {
 }
 
 // ============================================
-// CLASE TRIVIA (igual)
+// CLASE TRIVIA
 // ============================================
 class TriviaModal {
     constructor(obs){
@@ -345,7 +295,7 @@ class TriviaModal {
 }
 
 // ============================================
-// VARIABLES GLOBALES DEL JUEGO
+// VARIABLES GLOBALES
 // ============================================
 let dino = new Dinosaurio();
 let obstaculos = [];
@@ -380,7 +330,7 @@ function reiniciarJuego(){
     skinActual = "normal";
     juego.pantalla = "jugando";
     guardarProgreso();
-    actualizarPanelSombreros();
+    actualizarListaSombrerosHTML(); // refrescar sidebar
 }
 
 function terminarJuegoPorCompletar(){
@@ -484,12 +434,13 @@ function procesarRespuestaTrivia(){
         }
         const idx = obstaculos.indexOf(obstaculoEnPausa);
         if(idx !== -1) obstaculos.splice(idx,1);
+        // Desbloquear sombrero cada 2 aciertos
         const desbloq = juego.sombreros.filter(s=>s.desbloqueado).length;
         if(juego.respuestasCorrectas >= desbloq*2 && desbloq < SOMBREROS_BASE.length){
             juego.sombreros[desbloq].desbloqueado = true;
             mostrarMensaje(`🎉 NUEVO SOMBRERO: ${juego.sombreros[desbloq].nombre} 🎉`);
             guardarProgreso();
-            actualizarPanelSombreros();
+            actualizarListaSombrerosHTML();
         }
     } else if(resultado === 'incorrecto'){
         juego.respuestasIncorrectas++;
@@ -502,7 +453,36 @@ function procesarRespuestaTrivia(){
 }
 
 // ============================================
-// DIBUJADO (sin el panel de sombreros en canvas)
+// SOMBREROS HTML
+// ============================================
+function actualizarListaSombrerosHTML(){
+    const container = document.getElementById('sombrerosList');
+    if(!container) return;
+    container.innerHTML = '';
+    juego.sombreros.forEach(s => {
+        const div = document.createElement('div');
+        div.className = `sombrero-item ${s.desbloqueado ? 'desbloqueado' : 'bloqueado'} ${(s.id === juego.sombreroActual && s.desbloqueado) ? 'equipado' : ''}`;
+        if(s.desbloqueado){
+            div.style.cursor = 'pointer';
+            div.addEventListener('click', () => {
+                if(s.desbloqueado){
+                    juego.sombreroActual = s.id;
+                    guardarProgreso();
+                    actualizarListaSombrerosHTML();
+                    mostrarMensaje(`🎩 ${s.nombre} equipado`);
+                }
+            });
+        }
+        div.innerHTML = `
+            <div class="sombrero-emoji">${s.emoji}</div>
+            <div class="sombrero-nombre">${s.nombre}</div>
+        `;
+        container.appendChild(div);
+    });
+}
+
+// ============================================
+// DIBUJADO
 // ============================================
 function dibujarFondo(){
     if(juego.modoNoche){
@@ -531,7 +511,6 @@ function dibujarUI(){
     ctx.font='14px "Courier New", monospace'; ctx.fillStyle=juego.modoNoche?'#FFF':'#2C3E50'; ctx.textAlign='left';
     ctx.fillText(`🏆 ${Math.floor(juego.puntuacion)}`,15,30);
     ctx.fillText(`✅ ${juego.respuestasCorrectas}/${TOTAL_PREGUNTAS}`,15,55);
-    ctx.fillText(`📋 ${juego.preguntasDisponibles.length} restantes`,15,80);
     if(!juego.puedeEsquivar && juego.pantalla==="jugando") ctx.fillStyle='#F00', ctx.fillText('⚠️ ESQUIVE INHABILITADO ⚠️',canvas.width-180,30);
     if(temporizadorMensaje>0){
         ctx.fillStyle='#FFD700'; ctx.font='12px "Courier New", monospace'; ctx.textAlign='center';
@@ -617,8 +596,6 @@ document.addEventListener('keydown',(e)=>{
         if(key===' '){ e.preventDefault(); reiniciarJuego(); }
         if(key==='n'||key==='N') juego.modoNoche=!juego.modoNoche;
     } else if(juego.pantalla==="jugando"){
-        if(key==='ArrowLeft'){ cambiarSombrero('anterior'); return; }
-        if(key==='ArrowRight'){ cambiarSombrero('siguiente'); return; }
         if(triviaActiva && triviaModal){
             if(key==='Enter' || key==='z' || key==='Z'){
                 if(triviaModal.responder()) procesarRespuestaTrivia();
@@ -648,31 +625,11 @@ document.addEventListener('keyup',(e)=>{
 
 // INICIO
 reiniciarPreguntasDisponibles();
-actualizarPanelSombreros();
-
-// Panel HTML: toggle
-const toggleBtn = document.getElementById('togglePanelBtn');
-const panelSombreros = document.getElementById('sombrerosPanel');
-toggleBtn.addEventListener('click', () => {
-    if (panelSombreros.style.display === 'none') {
-        panelSombreros.style.display = 'block';
-    } else {
-        panelSombreros.style.display = 'none';
-    }
-});
-// Cerrar panel si se hace clic fuera (opcional)
-document.addEventListener('click', (e) => {
-    if (panelSombreros.style.display === 'block' && 
-        !panelSombreros.contains(e.target) && 
-        e.target !== toggleBtn) {
-        panelSombreros.style.display = 'none';
-    }
-});
-
+actualizarListaSombrerosHTML();
 function gameLoop(){ actualizarJuego(); dibujar(); requestAnimationFrame(gameLoop); }
 gameLoop();
 
-// Botones HTML 
+// Botones HTML
 document.getElementById('instruccionesBtn').addEventListener('click',()=>{ document.getElementById('modalInstrucciones').style.display='flex'; });
 document.getElementById('cerrarModal').addEventListener('click',()=>{ document.getElementById('modalInstrucciones').style.display='none'; });
-document.getElementById('resetProgresoBtn').addEventListener('click',()=>{ if(confirm("¿Reiniciar todo el progreso? Perderás todos los sombreros y la skin estrella desbloqueada.")) reiniciarProgresoCompleto(); });
+document.getElementById('resetProgresoBtn').addEventListener('click',()=>{ if(confirm("¿Reiniciar todo el progreso?")) reiniciarProgresoCompleto(); });
