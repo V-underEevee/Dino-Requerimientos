@@ -21,92 +21,29 @@
             background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
             font-family: 'Courier New', monospace;
             padding: 20px;
+            position: relative;
         }
         
-        .game-container {
+        .game-wrapper {
             display: flex;
-            gap: 20px;
-            flex-wrap: wrap;
-            justify-content: center;
-            align-items: flex-start;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
         }
         
         canvas {
             display: block;
+            margin: 0 auto;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
             border-radius: 8px;
             cursor: pointer;
         }
         
-        .sidebar {
-            background: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(8px);
-            border-radius: 12px;
-            padding: 15px;
-            min-width: 200px;
-            border: 1px solid #FFD700;
-            color: white;
-        }
-        
-        .sidebar h3 {
-            text-align: center;
-            color: #FFD700;
-            margin-bottom: 15px;
-            font-size: 16px;
-        }
-        
-        .sombreros-list {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-        }
-        
-        .sombrero-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 6px 10px;
-            background: rgba(255,255,255,0.1);
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid transparent;
-        }
-        
-        .sombrero-item.desbloqueado:hover {
-            background: rgba(255,215,0,0.3);
-            border-color: #FFD700;
-            transform: scale(1.02);
-        }
-        
-        .sombrero-item.bloqueado {
-            opacity: 0.5;
-            cursor: not-allowed;
-            filter: grayscale(0.5);
-        }
-        
-        .sombrero-item.equipado {
-            background: rgba(255,215,0,0.4);
-            border-color: #FFD700;
-            box-shadow: 0 0 8px gold;
-        }
-        
-        .sombrero-emoji {
-            font-size: 24px;
-            width: 40px;
-            text-align: center;
-        }
-        
-        .sombrero-nombre {
-            font-size: 12px;
-            flex: 1;
-        }
-        
         .controls-bar {
-            margin-top: 15px;
             display: flex;
-            gap: 10px;
+            gap: 12px;
             justify-content: center;
+            flex-wrap: wrap;
         }
         
         .ctrl-btn {
@@ -119,23 +56,135 @@
             border-radius: 30px;
             cursor: pointer;
             transition: all 0.2s ease;
+            backdrop-filter: blur(4px);
         }
         
         .ctrl-btn:hover {
             background: #FFD700;
             color: #1a1a2e;
+            transform: scale(1.02);
         }
         
         .info-panel {
-            margin-top: 15px;
-            text-align: center;
+            display: flex;
+            gap: 20px;
             color: #ffffff;
+            font-family: 'Courier New', monospace;
             font-size: 12px;
             background: rgba(0, 0, 0, 0.6);
             padding: 8px 20px;
             border-radius: 30px;
         }
         
+        .info-panel span {
+            color: #FFD700;
+        }
+        
+        /* Panel de sombreros lateral (HTML) */
+        .sombreros-panel {
+            position: fixed;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            width: 240px;
+            background: rgba(10, 15, 30, 0.95);
+            border: 2px solid #FFD700;
+            border-radius: 12px;
+            padding: 15px;
+            backdrop-filter: blur(8px);
+            color: #FFD700;
+            font-family: 'Courier New', monospace;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        
+        .sombreros-panel h3 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .sombreros-lista {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        
+        .sombrero-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 8px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .sombrero-item:hover {
+            background: rgba(255,215,0,0.2);
+            transform: scale(1.02);
+        }
+        
+        .sombrero-item.seleccionado {
+            border: 1px solid #FFD700;
+            background: rgba(255,215,0,0.3);
+        }
+        
+        .sombrero-item.bloqueado {
+            opacity: 0.5;
+            filter: grayscale(100%);
+            cursor: not-allowed;
+        }
+        
+        .sombrero-emoji {
+            font-size: 24px;
+        }
+        
+        .sombrero-nombre {
+            flex: 1;
+            font-size: 12px;
+        }
+        
+        .sombrero-estado {
+            font-size: 10px;
+            color: #aaa;
+        }
+        
+        .toggle-panel-btn {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            background: #FFD700;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 30px;
+            padding: 8px 16px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1001;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .toggle-panel-btn:hover {
+            background: #ffaa00;
+        }
+        
+        @media (max-width: 850px) {
+            .sombreros-panel {
+                width: 200px;
+                right: 10px;
+                padding: 10px;
+            }
+            .sombrero-emoji { font-size: 20px; }
+            .sombrero-nombre { font-size: 10px; }
+        }
+        
+        /* Modal de instrucciones */
         .modal {
             display: none;
             position: fixed;
@@ -146,7 +195,8 @@
             background: rgba(0,0,0,0.8);
             justify-content: center;
             align-items: center;
-            z-index: 1000;
+            z-index: 2000;
+            font-family: 'Courier New', monospace;
         }
         .modal-content {
             background: #0a0f1e;
@@ -158,6 +208,7 @@
             color: #FFD700;
         }
         .modal-content p {
+            margin: 10px 0;
             text-align: left;
             color: #ccc;
         }
@@ -169,52 +220,44 @@
             font-weight: bold;
             cursor: pointer;
         }
-        
-        @media (max-width: 700px) {
-            .game-container {
-                flex-direction: column;
-                align-items: center;
-            }
-            .sidebar {
-                width: 100%;
-                max-width: 300px;
-            }
-        }
     </style>
 </head>
 <body>
-<div class="game-container">
-    <canvas id="gameCanvas" width="800" height="400"></canvas>
-    <div class="sidebar">
-        <h3>🎩 SOMBREROS 🎩</h3>
-        <div id="sombrerosList" class="sombreros-list">
-            <!-- Se llenará con JS -->
-        </div>
+    <div class="game-wrapper">
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
         <div class="controls-bar">
             <div class="ctrl-btn" id="instruccionesBtn">📖 INSTRUCCIONES</div>
             <div class="ctrl-btn" id="resetProgresoBtn">🔄 REINICIAR PROGRESO</div>
         </div>
         <div class="info-panel">
-            🎮 CLICK en opción | Z/ENTER Responder &nbsp;&nbsp;|&nbsp;&nbsp; 🌙 N Modo Noche
+            <div>🎮 <span>CLICK</span> en opción | <span>Z/ENTER</span> Responder</div>
+            <div>🌙 <span>N</span> Modo Noche | <span>← →</span> Sombreros</div>
         </div>
     </div>
-</div>
 
-<!-- Modal de instrucciones -->
-<div id="modalInstrucciones" class="modal">
-    <div class="modal-content">
-        <h3>📜 INSTRUCCIONES</h3>
-        <p>✅ Responde las 10 preguntas correctamente para desbloquear la SKIN ESTRELLA ⭐</p>
-        <p>🖱️ CLICK sobre la opción que creas correcta.</p>
-        <p>⌨️ Presiona Z o ENTER para confirmar tu respuesta.</p>
-        <p>⚠️ Si fallas, el dinosaurio NO podrá esquivar el siguiente obstáculo.</p>
-        <p>🎩 Desbloquea sombreros cada 2 aciertos.</p>
-        <p>🌙 Presiona N para activar el modo noche.</p>
-        <p>🎮 ¡Buena suerte!</p>
-        <button id="cerrarModal">CERRAR</button>
+    <!-- Panel de sombreros (HTML lateral) -->
+    <div id="sombrerosPanel" class="sombreros-panel" style="display: none;">
+        <h3>🎩 SOMBREROS COLECCIONABLES</h3>
+        <div id="sombrerosLista" class="sombreros-lista"></div>
+        <div style="font-size: 10px; text-align: center; margin-top: 8px;">Click para equipar | ← → también</div>
     </div>
-</div>
+    <button id="togglePanelBtn" class="toggle-panel-btn">🎩 SOMBREROS</button>
 
-<script src="Dino_Requerimientos.js"></script>
+    <!-- Modal de instrucciones -->
+    <div id="modalInstrucciones" class="modal">
+        <div class="modal-content">
+            <h3>📜 INSTRUCCIONES</h3>
+            <p>✅ Responde las 10 preguntas correctamente para desbloquear la SKIN ESTRELLA ⭐</p>
+            <p>🖱️ CLICK sobre la opción que creas correcta.</p>
+            <p>⌨️ Presiona Z o ENTER para confirmar tu respuesta.</p>
+            <p>⚠️ Si fallas, el dinosaurio NO podrá esquivar el siguiente obstáculo.</p>
+            <p>🎩 Desbloquea sombreros cada 2 aciertos.</p>
+            <p>🌙 Presiona N para activar el modo noche.</p>
+            <p>🎮 ¡Buena suerte!</p>
+            <button id="cerrarModal">CERRAR</button>
+        </div>
+    </div>
+
+    <script src="Dino_Requerimientos.js"></script>
 </body>
 </html>
