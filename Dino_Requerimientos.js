@@ -672,7 +672,7 @@ document.addEventListener('click', (e) => {
 function gameLoop(){ actualizarJuego(); dibujar(); requestAnimationFrame(gameLoop); }
 gameLoop();
 
-// Botones HTML
+// Botones HTML 
 document.getElementById('instruccionesBtn').addEventListener('click',()=>{ document.getElementById('modalInstrucciones').style.display='flex'; });
 document.getElementById('cerrarModal').addEventListener('click',()=>{ document.getElementById('modalInstrucciones').style.display='none'; });
 document.getElementById('resetProgresoBtn').addEventListener('click',()=>{ if(confirm("¿Reiniciar todo el progreso? Perderás todos los sombreros y la skin estrella desbloqueada.")) reiniciarProgresoCompleto(); });
