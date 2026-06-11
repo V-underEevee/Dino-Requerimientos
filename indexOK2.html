@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>DINO REQUERIMIENTOS - Trivia Edition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: 'Courier New', monospace;
+            padding: 20px;
+            position: relative;
+        }
+        
+        .game-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        canvas {
+            display: block;
+            margin: 0 auto;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        
+        .controls-bar {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .ctrl-btn {
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #FFD700;
+            color: #FFD700;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            padding: 6px 14px;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(4px);
+        }
+        
+        .ctrl-btn:hover {
+            background: #FFD700;
+            color: #1a1a2e;
+            transform: scale(1.02);
+        }
+        
+        .info-panel {
+            display: flex;
+            gap: 20px;
+            color: #ffffff;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 8px 20px;
+            border-radius: 30px;
+        }
+        
+        .info-panel span {
+            color: #FFD700;
+        }
+        
+        /* Panel de sombreros lateral (HTML) */
+        .sombreros-panel {
+            position: fixed;
+            top: 50%;
+            right: 20px;
+            transform: translateY(-50%);
+            width: 240px;
+            background: rgba(10, 15, 30, 0.95);
+            border: 2px solid #FFD700;
+            border-radius: 12px;
+            padding: 15px;
+            backdrop-filter: blur(8px);
+            color: #FFD700;
+            font-family: 'Courier New', monospace;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        
+        .sombreros-panel h3 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .sombreros-lista {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 10px;
+        }
+        
+        .sombrero-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 6px 8px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .sombrero-item:hover {
+            background: rgba(255,215,0,0.2);
+            transform: scale(1.02);
+        }
+        
+        .sombrero-item.seleccionado {
+            border: 1px solid #FFD700;
+            background: rgba(255,215,0,0.3);
+        }
+        
+        .sombrero-item.bloqueado {
+            opacity: 0.5;
+            filter: grayscale(100%);
+            cursor: not-allowed;
+        }
+        
+        .sombrero-emoji {
+            font-size: 24px;
+        }
+        
+        .sombrero-nombre {
+            flex: 1;
+            font-size: 12px;
+        }
+        
+        .sombrero-estado {
+            font-size: 10px;
+            color: #aaa;
+        }
+        
+        .toggle-panel-btn {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            background: #FFD700;
+            color: #1a1a2e;
+            border: none;
+            border-radius: 30px;
+            padding: 8px 16px;
+            font-weight: bold;
+            cursor: pointer;
+            z-index: 1001;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .toggle-panel-btn:hover {
+            background: #ffaa00;
+        }
+        
+        @media (max-width: 850px) {
+            .sombreros-panel {
+                width: 200px;
+                right: 10px;
+                padding: 10px;
+            }
+            .sombrero-emoji { font-size: 20px; }
+            .sombrero-nombre { font-size: 10px; }
+        }
+        
+        /* Modal de instrucciones */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            font-family: 'Courier New', monospace;
+        }
+        .modal-content {
+            background: #0a0f1e;
+            border: 2px solid #FFD700;
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 400px;
+            text-align: center;
+            color: #FFD700;
+        }
+        .modal-content p {
+            margin: 10px 0;
+            text-align: left;
+            color: #ccc;
+        }
+        .modal-content button {
+            margin-top: 15px;
+            padding: 6px 20px;
+            background: #FFD700;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-wrapper">
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        <div class="controls-bar">
+            <div class="ctrl-btn" id="instruccionesBtn">📖 INSTRUCCIONES</div>
+            <div class="ctrl-btn" id="resetProgresoBtn">🔄 REINICIAR PROGRESO</div>
+        </div>
+        <div class="info-panel">
+            <div>🎮 <span>CLICK</span> en opción | <span>Z/ENTER</span> Responder</div>
+            <div>🌙 <span>N</span> Modo Noche | <span>← →</span> Sombreros</div>
+        </div>
+    </div>
+
+    <!-- Panel de sombreros (HTML lateral) -->
+    <div id="sombrerosPanel" class="sombreros-panel" style="display: none;">
+        <h3>🎩 SOMBREROS COLECCIONABLES</h3>
+        <div id="sombrerosLista" class="sombreros-lista"></div>
+        <div style="font-size: 10px; text-align: center; margin-top: 8px;">Click para equipar | ← → también</div>
+    </div>
+    <button id="togglePanelBtn" class="toggle-panel-btn">🎩 SOMBREROS</button>
+
+    <!-- Modal de instrucciones -->
+    <div id="modalInstrucciones" class="modal">
+        <div class="modal-content">
+            <h3>📜 INSTRUCCIONES</h3>
+            <p>✅ Responde correctamente para desbloquear un COLECCIONABLE</p>
+            <p>🖱️ CLICK sobre la opción que creas correcta.</p>
+            <p>⌨️ Presiona Z o ENTER para confirmar tu respuesta.</p>
+            <p>⚠️ Si fallas, tendras que empezar desde 0.</p>
+            <p>🎩 Desbloquea sombreros cada 2 aciertos.</p>
+            <p>🌙 Presiona N para activar el modo noche.</p>
+            <p>🎮 ¡Buena suerte!</p>
+            <button id="cerrarModal">CERRAR</button>
+        </div>
+    </div>
+
+    <script src="Dino_Requerimientos_OK2.js"></script>
+</body>
+</html>
