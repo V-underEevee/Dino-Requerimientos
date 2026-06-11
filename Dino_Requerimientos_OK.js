@@ -1,6 +1,6 @@
 // ============================================
 // DINO REQUERIMIENTOS - LEAN EDITION
-// Con preguntas definitivas, cinemática mejorada y panel HTML
+// Con 12 sombreros coleccionables
 // ============================================
 
 const canvas = document.getElementById('gameCanvas');
@@ -327,7 +327,7 @@ const PREGUNTAS = [
 const TOTAL_PREGUNTAS = PREGUNTAS.length;
 
 // ============================================
-// SOMBREROS COLECCIONABLES
+// SOMBREROS COLECCIONABLES (12 sombreros)
 // ============================================
 const SOMBREROS = [
     { id: 0, nombre: "CASUAL", emoji: "🧢", desbloqueado: true },
@@ -335,7 +335,13 @@ const SOMBREROS = [
     { id: 2, nombre: "CORONA", emoji: "👑", desbloqueado: false },
     { id: 3, nombre: "VAQUERO", emoji: "🤠", desbloqueado: false },
     { id: 4, nombre: "MAGO", emoji: "🧙", desbloqueado: false },
-    { id: 5, nombre: "GRADUADO", emoji: "🎓", desbloqueado: false }
+    { id: 5, nombre: "GRADUADO", emoji: "🎓", desbloqueado: false },
+    { id: 6, nombre: "SOLERA PLAYA", emoji: "👒", desbloqueado: false },
+    { id: 7, nombre: "MOÑO ROSA", emoji: "🎀", desbloqueado: false },
+    { id: 8, nombre: "SCARY PUMPKIN", emoji: "🎃", desbloqueado: false },
+    { id: 9, nombre: "TRAGEDY&COMEDY", emoji: "🎭", desbloqueado: false },
+    { id: 10, nombre: "GORRO FIESTA", emoji: "🥳", desbloqueado: false },
+    { id: 11, nombre: "WINRAR", emoji: "📚", desbloqueado: false }
 ];
 
 let skinEstrellaDesbloqueada = localStorage.getItem('skinEstrella') === 'true';
@@ -475,7 +481,7 @@ class Dinosaurio {
         this.agachado = false;
         this.animacionPata = 0;
         this.saltando = false;
-        this.escala = 1; // Para cinemática
+        this.escala = 1;
     }
     
     saltar() {
@@ -546,7 +552,7 @@ class Dinosaurio {
     
     dibujar() {
         if (skinActual === "estrella" && skinEstrellaDesbloqueada) {
-            // Estrella de 5 puntas (envolviendo al dinosaurio)
+            // Estrella de 5 puntas
             const cx = this.x + this.ancho/2;
             const cy = this.y + this.alto/2;
             const rExt = 30;
@@ -568,7 +574,7 @@ class Dinosaurio {
             ctx.lineWidth = 2;
             ctx.stroke();
             
-            // Cara (ojos, hocico) dentro de la estrella
+            // Cara
             ctx.fillStyle = "#FFFFFF";
             ctx.beginPath();
             ctx.arc(this.x + this.ancho - 6, this.y + 10, 5, 0, Math.PI * 2);
@@ -580,7 +586,7 @@ class Dinosaurio {
             ctx.fillStyle = "#2C3E50";
             ctx.fillRect(this.x + this.ancho - 10, this.y + 15, 8, 6);
             
-            // Patitas (salen por debajo de la estrella)
+            // Patitas
             if (this.enSuelo) {
                 const offset = Math.sin(this.animacionPata) * 2;
                 ctx.fillStyle = "#F1C40F";
@@ -633,7 +639,7 @@ class Dinosaurio {
 }
 
 // ============================================
-// CLASE OBSTÁCULO
+// CLASE OBSTÁCULO (sin cambios)
 // ============================================
 class Obstaculo {
     constructor(tipo, x, esInicial = false) {
@@ -692,7 +698,7 @@ class Obstaculo {
 }
 
 // ============================================
-// CLASE TRIVIA
+// CLASE TRIVIA (sin cambios)
 // ============================================
 class TriviaModal {
     constructor(obstaculo, dino) {
@@ -1069,7 +1075,7 @@ function procesarRespuestaTrivia() {
 }
 
 // ============================================
-// DIBUJADO
+// DIBUJADO (sin cambios)
 // ============================================
 function dibujarFondo() {
     if (juego.modoNoche) {
@@ -1250,13 +1256,12 @@ function dibujarCinematica() {
     dibujarFondo();
     dibujarSuelo();
     
-    // Animación de crecimiento
     juego.cinematicAltura += 3;
     if (juego.cinematicAltura > canvas.height - 120) {
         juego.cinematicAltura = canvas.height - 120;
     }
     
-    // Pilar central (cuerpo oscuro)
+    // Pilar central oscuro
     const pilarAncho = 40;
     const pilarX = canvas.width/2 - pilarAncho/2;
     const pilarAlto = juego.cinematicAltura;
@@ -1265,29 +1270,28 @@ function dibujarCinematica() {
     ctx.fillStyle = '#111111';
     ctx.fillRect(pilarX, pilarY, pilarAncho, pilarAlto);
     
-    // Base superior del pilar (color según modo noche)
+    // Base superior brillante
     const baseAltura = 15;
     if (juego.modoNoche) {
-        ctx.fillStyle = '#CCCCAA'; // Luz de luna
+        ctx.fillStyle = '#CCCCAA';
     } else {
-        ctx.fillStyle = '#FFE4B5'; // Luz solar natural
+        ctx.fillStyle = '#FFE4B5';
     }
     ctx.fillRect(pilarX - 10, pilarY - baseAltura, pilarAncho + 20, baseAltura);
     
-    // Dinosaurio (va creciendo de tamaño a medida que sube)
+    // Dinosaurio creciente
     const escala = 0.5 + (juego.cinematicAltura / (canvas.height - 120)) * 1.5;
     const dinoW = 28 * escala;
     const dinoH = 45 * escala;
     const dinoX = canvas.width/2 - dinoW/2;
     const dinoY = pilarY - dinoH - 5;
     
-    // Dibujar dinosaurio con skin estrella (aunque no esté desbloqueada, en la cinemática se muestra)
     ctx.save();
     ctx.translate(dinoX + dinoW/2, dinoY + dinoH/2);
     ctx.scale(escala, escala);
     ctx.translate(-(dinoX + dinoW/2), -(dinoY + dinoH/2));
     
-    // Estrella de 5 puntas (más grande que el cuerpo)
+    // Estrella
     const cx = dinoX + dinoW/2;
     const cy = dinoY + dinoH/2;
     const rExt = 30 * escala;
