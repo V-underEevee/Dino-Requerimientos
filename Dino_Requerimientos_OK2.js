@@ -1,6 +1,5 @@
 // ============================================
-// DINO REQUERIMIENTOS - LEAN EDITION (FINAL)
-// Con 26 preguntas de LEAN, 13 sombreros (el último es la estrella dorada)
+// DINO REQUERIMIENTOS - LEAN EDITION (EXPLOSIÓN)
 // ============================================
 
 const canvas = document.getElementById('gameCanvas');
@@ -59,10 +58,13 @@ const SOMBREROS = [
     { id: 12, nombre: "ESTRELLA DORADA", emoji: "⭐", desbloqueado: false }
 ];
 
-let skinEstrellaDesbloqueada = false; // Ya no se usa directamente, pero se mantiene por compatibilidad
-let skinActual = "normal";
-let temporizadorMensaje = 0;
-let mensajeTemporal = "";
+// ============================================
+// VARIABLES DE EXPLOSIÓN
+// ============================================
+let explosionActive = false;
+let explosionTimer = null;
+let explosionImg = null;
+let explosionX = 0, explosionY = 0;
 
 // ============================================
 // ESTADO DEL JUEGO
@@ -88,6 +90,9 @@ let juego = {
     errorShake: 0,
     confetti: []
 };
+
+let temporizadorMensaje = 0;
+let mensajeTemporal = "";
 
 // ============================================
 // CONSTANTES
@@ -267,6 +272,51 @@ function cambiarSombrero(direccion) {
     mostrarMensaje(`🎩 ${desbloqueados[idxActual].nombre} equipado`);
     actualizarPanelSombreros();
     guardarProgreso();
+}
+
+// ============================================
+// FUNCIONES DE EXPLOSIÓN
+// ============================================
+function mostrarExplosion(x, y) {
+    if (explosionActive) return;
+    
+    const container = document.getElementById('explosionContainer');
+    if (!container) return;
+    
+    // Posicionar sobre el dinosaurio
+    container.style.left = (x - 40) + 'px';
+    container.style.top = (y - 40) + 'px';
+    container.style.display = 'block';
+    explosionActive = true;
+    
+    // Cargar el GIF si no está cargado
+    if (!explosionImg) {
+        explosionImg = document.createElement('img');
+        explosionImg.src = 'https://media.tenor.com/2jTq_9fRc1UAAAAi/boom-explosion.gif'; // URL alternativa más confiable
+        explosionImg.style.width = '80px';
+        explosionImg.style.height = '80px';
+        explosionImg.style.position = 'absolute';
+        explosionImg.style.top = '0';
+        explosionImg.style.left = '0';
+        container.innerHTML = '';
+        container.appendChild(explosionImg);
+    }
+    
+    // Programar ocultación y fin del juego
+    if (explosionTimer) clearTimeout(explosionTimer);
+    explosionTimer = setTimeout(() => {
+        if (container) container.style.display = 'none';
+        explosionActive = false;
+        // Terminar juego después de la explosión
+        if (juego.pantalla === "jugando") {
+            juegoActivo = false;
+            juego.pantalla = "gameover";
+            if (juego.puntuacion > juego.record) {
+                juego.record = juego.puntuacion;
+                guardarProgreso();
+            }
+        }
+    }, 800);
 }
 
 // ============================================
@@ -689,6 +739,12 @@ let obstaculoEnPausa = null;
 // FUNCIONES DEL JUEGO
 // ============================================
 function reiniciarJuego() {
+    // Ocultar explosión si está activa
+    const container = document.getElementById('explosionContainer');
+    if (container) container.style.display = 'none';
+    if (explosionTimer) clearTimeout(explosionTimer);
+    explosionActive = false;
+    
     juego.intentos++;
     dino = new Dinosaurio();
     obstaculos = [];
@@ -778,12 +834,10 @@ function actualizarJuego() {
                 rectDino.y < rectObs.y + rectObs.alto &&
                 rectDino.y + rectDino.alto > rectObs.y) {
                 if (!juego.puedeEsquivar || !obs.preguntaAsignada) {
-                    juegoActivo = false;
-                    juego.pantalla = "gameover";
-                    if (juego.puntuacion > juego.record) {
-                        juego.record = juego.puntuacion;
-                        guardarProgreso();
-                    }
+                    // Mostrar explosión en la posición del dinosaurio
+                    const dinoRect = dino.obtenerRect();
+                    mostrarExplosion(dinoRect.x + 15, dinoRect.y + 25);
+                    // No terminar el juego inmediatamente, la explosión lo hará después de 800ms
                     return;
                 }
             }
@@ -796,8 +850,6 @@ function actualizarJuego() {
         juego.puntuacion += 1;
     }
 }
-
-// ... (todo el código anterior hasta la función procesarRespuestaTrivia es igual)
 
 function procesarRespuestaTrivia() {
     if (!triviaModal) return;
@@ -837,25 +889,20 @@ function procesarRespuestaTrivia() {
         juego.respuestasIncorrectas++;
         juego.puedeEsquivar = false;
         marcarPreguntaRespondida(preguntaId);
-        juego.errorShake = 12;      // Temblor activado
-        reproducirError();           // Sonido de error (opcional)
-        // NO mostrar mensaje
-        // NO terminar el juego; el dinosaurio chocará más adelante
+        juego.errorShake = 12;
+        reproducirError();
+        // No mostrar mensaje, solo inhabilitar esquivar
     }
     
-    // En ambos casos, se reanuda el juego y se cierra la trivia
     juego.juegoPausado = false;
     triviaActiva = false;
     triviaModal = null;
     obstaculoEnPausa = null;
 }
 
-// ... (resto del código igual)
 // ============================================
-// DIBUJADO (igual que antes, pero sin panel de sombreros dentro del canvas)
+// DIBUJADO
 // ============================================
-
-
 function dibujarFondo() {
     if (juego.modoNoche) {
         const grad = ctx.createLinearGradient(0, 0, 0, canvas.height);

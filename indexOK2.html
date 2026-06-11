@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>DINO REQUERIMIENTOS - Trivia Edition</title>
+    <title>DINO REQUERIMIENTOS - LEAN Edition</title>
     <style>
         * {
             margin: 0;
@@ -29,6 +29,7 @@
             flex-direction: column;
             align-items: center;
             gap: 15px;
+            position: relative;
         }
         
         canvas {
@@ -174,6 +175,16 @@
             background: #ffaa00;
         }
         
+        /* Contenedor de explosión */
+        #explosionContainer {
+            position: absolute;
+            display: none;
+            pointer-events: none;
+            z-index: 1000;
+            width: 80px;
+            height: 80px;
+        }
+        
         @media (max-width: 850px) {
             .sombreros-panel {
                 width: 200px;
@@ -182,6 +193,14 @@
             }
             .sombrero-emoji { font-size: 20px; }
             .sombrero-nombre { font-size: 10px; }
+            canvas {
+                width: 95vw;
+                height: auto;
+            }
+            .ctrl-btn {
+                padding: 4px 10px;
+                font-size: 10px;
+            }
         }
         
         /* Modal de instrucciones */
@@ -225,6 +244,10 @@
 <body>
     <div class="game-wrapper">
         <canvas id="gameCanvas" width="800" height="400"></canvas>
+        
+        <!-- Contenedor para la explosión -->
+        <div id="explosionContainer" style="position: absolute; display: none; pointer-events: none; z-index: 1000; width: 80px; height: 80px;"></div>
+        
         <div class="controls-bar">
             <div class="ctrl-btn" id="instruccionesBtn">📖 INSTRUCCIONES</div>
             <div class="ctrl-btn" id="resetProgresoBtn">🔄 REINICIAR PROGRESO</div>
@@ -247,10 +270,10 @@
     <div id="modalInstrucciones" class="modal">
         <div class="modal-content">
             <h3>📜 INSTRUCCIONES</h3>
-            <p>✅ Responde correctamente para desbloquear un COLECCIONABLE</p>
+            <p>✅ Responde las 26 preguntas de LEAN correctamente para desbloquear la SKIN ESTRELLA ⭐</p>
             <p>🖱️ CLICK sobre la opción que creas correcta.</p>
             <p>⌨️ Presiona Z o ENTER para confirmar tu respuesta.</p>
-            <p>⚠️ Si fallas, tendras que empezar desde 0.</p>
+            <p>⚠️ Si fallas, NO podrás esquivar el siguiente obstáculo y EXPLOTARÁS 💥</p>
             <p>🎩 Desbloquea sombreros cada 2 aciertos.</p>
             <p>🌙 Presiona N para activar el modo noche.</p>
             <p>🎮 ¡Buena suerte!</p>
@@ -258,6 +281,6 @@
         </div>
     </div>
 
-    <script src="Dino_Requerimientos_OK2.js"></script>
+    <script src="Dino_Requerimientos.js"></script>
 </body>
 </html>
