@@ -1,5 +1,5 @@
 // ============================================
-// DINO REQUERIMIENTOS - LEAN EDITION (EXPLOSIÓN)
+// DINO REQUERIMIENTOS - LEAN EDITION (CORREGIDO)
 // ============================================
 
 const canvas = document.getElementById('gameCanvas');
@@ -40,7 +40,7 @@ const PREGUNTAS = [
 const TOTAL_PREGUNTAS = PREGUNTAS.length;
 
 // ============================================
-// SOMBREROS COLECCIONABLES (13 sombreros, el último es la estrella dorada)
+// SOMBREROS COLECCIONABLES (13 sombreros)
 // ============================================
 const SOMBREROS = [
     { id: 0, nombre: "CASUAL", emoji: "🧢", desbloqueado: true },
@@ -64,7 +64,6 @@ const SOMBREROS = [
 let explosionActive = false;
 let explosionTimer = null;
 let explosionImg = null;
-let explosionX = 0, explosionY = 0;
 
 // ============================================
 // ESTADO DEL JUEGO
@@ -102,6 +101,7 @@ const VELOCIDAD_SALTO = -14;
 const VELOCIDAD_BASE = 4;
 
 let contadorObstaculos = 0;
+let colisionPendiente = false; // Nueva variable para controlar colisión
 
 // ============================================
 // FUNCIONES AUXILIARES
@@ -283,16 +283,14 @@ function mostrarExplosion(x, y) {
     const container = document.getElementById('explosionContainer');
     if (!container) return;
     
-    // Posicionar sobre el dinosaurio
     container.style.left = (x - 40) + 'px';
     container.style.top = (y - 40) + 'px';
     container.style.display = 'block';
     explosionActive = true;
     
-    // Cargar el GIF si no está cargado
     if (!explosionImg) {
         explosionImg = document.createElement('img');
-        explosionImg.src = 'https://media.tenor.com/2jTq_9fRc1UAAAAi/boom-explosion.gif'; // URL alternativa más confiable
+        explosionImg.src = 'https://media.tenor.com/2jTq_9fRc1UAAAAi/boom-explosion.gif';
         explosionImg.style.width = '80px';
         explosionImg.style.height = '80px';
         explosionImg.style.position = 'absolute';
@@ -302,12 +300,10 @@ function mostrarExplosion(x, y) {
         container.appendChild(explosionImg);
     }
     
-    // Programar ocultación y fin del juego
     if (explosionTimer) clearTimeout(explosionTimer);
     explosionTimer = setTimeout(() => {
         if (container) container.style.display = 'none';
         explosionActive = false;
-        // Terminar juego después de la explosión
         if (juego.pantalla === "jugando") {
             juegoActivo = false;
             juego.pantalla = "gameover";
@@ -404,7 +400,6 @@ class Dinosaurio {
         const esSombreroEstrella = (sombreroActualObj && sombreroActualObj.id === 12 && sombreroActualObj.desbloqueado);
         
         if (esSombreroEstrella) {
-            // Estrella de 5 puntas
             const cx = this.x + this.ancho/2;
             const cy = this.y + this.alto/2;
             const rExt = 30;
@@ -426,7 +421,6 @@ class Dinosaurio {
             ctx.lineWidth = 2;
             ctx.stroke();
             
-            // Cara
             ctx.fillStyle = "#FFFFFF";
             ctx.beginPath();
             ctx.arc(this.x + this.ancho - 6, this.y + 10, 5, 0, Math.PI * 2);
@@ -438,7 +432,6 @@ class Dinosaurio {
             ctx.fillStyle = "#2C3E50";
             ctx.fillRect(this.x + this.ancho - 10, this.y + 15, 8, 6);
             
-            // Patitas
             if (this.enSuelo) {
                 const offset = Math.sin(this.animacionPata) * 2;
                 ctx.fillStyle = "#F1C40F";
@@ -446,7 +439,6 @@ class Dinosaurio {
                 ctx.fillRect(this.x + 17 + offset, this.y + this.alto, 6, 8);
             }
         } else {
-            // Skin normal
             ctx.fillStyle = juego.modoNoche ? '#4ECDC4' : '#2C3E50';
             ctx.fillRect(this.x, this.y, this.ancho, this.alto);
             
@@ -513,7 +505,7 @@ class Obstaculo {
     }
     
     actualizar(velocidad) {
-        if (!juego.juegoPausado && !juego.juegoCompletado) this.x -= velocidad;
+        if (!juego.juegoPausado && !juego.juegoCompletado && !colisionPendiente) this.x -= velocidad;
     }
     
     dibujar() {
@@ -654,10 +646,30 @@ class TriviaModal {
         if (!this.visible || this.procesado) return false;
         const panelAncho = 520;
         const panelX = (canvas.width - panelAncho) / 2;
-        const lineHeight = 22;
-        const maxPreguntaWidth = panelAncho - 60;
         const opcionAncho = (panelAncho - 80) / 2;
-        const opcionTextoMax = opcionAncho - 50;
+        const opcionesYBase = this.calcularPosiciones();
+        if (!opcionesYBase) return false;
+        
+        for (let f = 0; f < 2; f++) {
+            for (let col = 0; col < 2; col++) {
+                const i = f * 2 + col;
+                if (i >= this.pregunta.opciones.length) continue;
+                const opX = panelX + 30 + col * (opcionAncho + 20);
+                const opY = opcionesYBase.y + f * (opcionesYBase.altoFila + 12);
+                if (x >= opX && x <= opX + opcionAncho && y >= opY && y <= opY + opcionesYBase.altoFila) {
+                    this.opcionSeleccionada = i;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    calcularPosiciones() {
+        const panelAncho = 520;
+        const lineHeight = 22;
+        const panelX = (canvas.width - panelAncho) / 2;
+        const maxTextoAncho = panelAncho - 60;
         ctx.font = '15px "Courier New", monospace';
         function wrapText(text, maxWidth) {
             const palabras = text.split(' ');
@@ -671,8 +683,9 @@ class TriviaModal {
             if (actual) lineas.push(actual);
             return lineas;
         }
-        const lineasPregunta = wrapText(this.pregunta.texto, maxPreguntaWidth);
-        const lineasOpciones = this.pregunta.opciones.map(op => wrapText(op, opcionTextoMax));
+        const opcionAncho = (panelAncho - 80) / 2;
+        const lineasPregunta = wrapText(this.pregunta.texto, maxTextoAncho);
+        const lineasOpciones = this.pregunta.opciones.map(op => wrapText(op, opcionAncho - 50));
         const opcionAlturas = lineasOpciones.map(l => Math.max(70, 16 + l.length * 18));
         const filas = Math.ceil(this.pregunta.opciones.length / 2);
         const filaAlturas = [];
@@ -687,23 +700,7 @@ class TriviaModal {
         const panelY = (canvas.height - panelAlto) / 2 - 10;
         const separadorY = panelY + 55 + lineasPregunta.length * lineHeight + 10;
         const opcionesY = separadorY + 18;
-        
-        let currentY = opcionesY;
-        for (let f = 0; f < filas; f++) {
-            const altoFila = filaAlturas[f];
-            for (let col = 0; col < 2; col++) {
-                const i = f * 2 + col;
-                if (i >= this.pregunta.opciones.length) continue;
-                const opX = panelX + 30 + col * (opcionAncho + 20);
-                const opY = currentY;
-                if (x >= opX && x <= opX + opcionAncho && y >= opY && y <= opY + altoFila) {
-                    this.opcionSeleccionada = i;
-                    return true;
-                }
-            }
-            currentY += altoFila + espacioEntreFilas;
-        }
-        return false;
+        return { y: opcionesY, altoFila: filaAlturas[0] };
     }
     
     responder() {
@@ -739,11 +736,11 @@ let obstaculoEnPausa = null;
 // FUNCIONES DEL JUEGO
 // ============================================
 function reiniciarJuego() {
-    // Ocultar explosión si está activa
     const container = document.getElementById('explosionContainer');
     if (container) container.style.display = 'none';
     if (explosionTimer) clearTimeout(explosionTimer);
     explosionActive = false;
+    colisionPendiente = false;
     
     juego.intentos++;
     dino = new Dinosaurio();
@@ -809,7 +806,7 @@ function generarObstaculo() {
 function actualizarJuego() {
     if (juego.pantalla !== "jugando") return;
     if (juego.juegoCompletado) return;
-    if (!juego.juegoPausado) {
+    if (!juego.juegoPausado && !colisionPendiente) {
         dino.actualizar();
         sueloX -= velocidadJuego;
         if (sueloX <= -canvas.width) sueloX = 0;
@@ -834,10 +831,10 @@ function actualizarJuego() {
                 rectDino.y < rectObs.y + rectObs.alto &&
                 rectDino.y + rectDino.alto > rectObs.y) {
                 if (!juego.puedeEsquivar || !obs.preguntaAsignada) {
-                    // Mostrar explosión en la posición del dinosaurio
+                    colisionPendiente = true;
+                    juego.errorShake = 12;
                     const dinoRect = dino.obtenerRect();
                     mostrarExplosion(dinoRect.x + 15, dinoRect.y + 25);
-                    // No terminar el juego inmediatamente, la explosión lo hará después de 800ms
                     return;
                 }
             }
@@ -891,7 +888,6 @@ function procesarRespuestaTrivia() {
         marcarPreguntaRespondida(preguntaId);
         juego.errorShake = 12;
         reproducirError();
-        // No mostrar mensaje, solo inhabilitar esquivar
     }
     
     juego.juegoPausado = false;
@@ -1004,7 +1000,7 @@ function dibujarMenu() {
         '* Responde las 26 preguntas de LEAN para completar el juego',
         '* CLICK en opción para seleccionar',
         '* Presiona Z o ENTER para responder',
-        '* Si fallas, NO podrás esquivar el obstáculo',
+        '* Si fallas, NO podrás esquivar el obstáculo y EXPLOTARÁS 💥',
         '* Responde TODAS bien para DESBLOQUEAR UN COLECCIONABLE'
     ];
     for (let i = 0; i < instrucciones.length; i++) {
@@ -1163,7 +1159,7 @@ document.addEventListener('keydown', (e) => {
             if (tecla === 'Enter' || tecla === 'z' || tecla === 'Z') {
                 if (triviaModal.responder()) procesarRespuestaTrivia();
             }
-        } else if (!juego.juegoPausado && !juego.juegoCompletado) {
+        } else if (!juego.juegoPausado && !juego.juegoCompletado && !colisionPendiente) {
             if (tecla === 'ArrowUp' || tecla === ' ') { e.preventDefault(); dino.saltar(); }
             else if (tecla === 'ArrowDown' || tecla === 'Shift') { e.preventDefault(); dino.agachar(true); }
         }
@@ -1177,7 +1173,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 document.addEventListener('keyup', (e) => {
-    if (juego.pantalla === "jugando" && !triviaActiva && !juego.juegoPausado && juego.puedeEsquivar && !juego.juegoCompletado) {
+    if (juego.pantalla === "jugando" && !triviaActiva && !juego.juegoPausado && juego.puedeEsquivar && !juego.juegoCompletado && !colisionPendiente) {
         if (e.key === 'ArrowDown' || e.key === 'Shift') dino.agachar(false);
     }
 });
