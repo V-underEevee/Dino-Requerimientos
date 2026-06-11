@@ -973,40 +973,147 @@ function dibujarGameOver() {
     ctx.textAlign = 'left';
 }
 
+// ============================================
+// NUEVA CINEMÁTICA CON PILAR CIRCULAR Y ESTRELLA DE 5 PUNTAS
+// ============================================
 function dibujarCinematica() {
     dibujarFondo();
     dibujarSuelo();
     
+    // Altura actual del pilar (crece hasta un máximo)
     juego.cinematicAltura += 2;
-    if (juego.cinematicAltura > canvas.height - 150) {
-        juego.cinematicAltura = canvas.height - 150;
+    const alturaMaxima = canvas.height - 150;
+    if (juego.cinematicAltura > alturaMaxima) {
+        juego.cinematicAltura = alturaMaxima;
     }
     
-    ctx.fillStyle = '#8B4513';
-    ctx.fillRect(canvas.width / 2 - 30, canvas.height - juego.cinematicAltura, 60, juego.cinematicAltura);
+    // Progreso de 0 a 1 para escalar al dinosaurio (crece desde 0.6 hasta 1.2)
+    const progreso = juego.cinematicAltura / alturaMaxima;
+    const escalaDino = 0.6 + progreso * 0.8; // escala de 0.6 a 1.4
     
+    // 1. Dibujar el PILAR (cuerpo oscuro)
+    const pilarX = canvas.width / 2 - 20;
+    const pilarYBase = canvas.height - 45; // base del suelo
+    const pilarAltura = juego.cinematicAltura;
+    const pilarY = pilarYBase - pilarAltura;
+    
+    // Cuerpo del pilar (sombra oscura)
+    ctx.fillStyle = '#1a1a2e'; // casi negro, se mezcla poco con fondos claros/oscuros
+    ctx.fillRect(pilarX, pilarY, 40, pilarAltura);
+    
+    // 2. Base circular iluminada (parte superior del pilar)
+    const baseX = canvas.width / 2;
+    const baseY = pilarY;
+    const radioBase = 30 + (progreso * 5); // radio crece un poco con la altura
+    
+    // Gradiente radial para la base (luz natural o de luna)
+    let gradienteBase;
+    if (juego.modoNoche) {
+        gradienteBase = ctx.createRadialGradient(baseX, baseY - 5, 5, baseX, baseY, radioBase);
+        gradienteBase.addColorStop(0, '#FFE66D'); // centro brillante (luna)
+        gradienteBase.addColorStop(1, '#8B8B3D'); // borde más oscuro
+    } else {
+        gradienteBase = ctx.createRadialGradient(baseX, baseY - 5, 5, baseX, baseY, radioBase);
+        gradienteBase.addColorStop(0, '#FFF5C4'); // luz solar intensa
+        gradienteBase.addColorStop(1, '#D4A373'); // borde tierra
+    }
+    ctx.fillStyle = gradienteBase;
+    ctx.beginPath();
+    ctx.ellipse(baseX, baseY, radioBase, radioBase * 0.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // 3. Dibujar el DINOSAURIO con DISFRAZ DE ESTRELLA de 5 puntas
+    const dinoCentroX = canvas.width / 2;
+    const dinoCentroY = baseY - 15 * escalaDino;
+    
+    // Guardar estado para escalado
+    ctx.save();
+    ctx.translate(dinoCentroX, dinoCentroY);
+    ctx.scale(escalaDino, escalaDino);
+    
+    // Estrella de 5 puntas con brazos y piernas
+    const radioEstrella = 25;
+    const puntas = 5;
+    const anguloInicial = -Math.PI / 2; // una punta hacia arriba (cabeza)
+    
+    ctx.beginPath();
+    for (let i = 0; i < puntas * 2; i++) {
+        let radio = i % 2 === 0 ? radioEstrella : radioEstrella * 0.45;
+        let angulo = anguloInicial + i * Math.PI / puntas;
+        let x = radio * Math.cos(angulo);
+        let y = radio * Math.sin(angulo);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
     ctx.fillStyle = '#F1C40F';
-    ctx.fillRect(canvas.width / 2 - 14, canvas.height - juego.cinematicAltura - 45, 28, 45);
+    ctx.fill();
+    ctx.strokeStyle = '#FFA500';
+    ctx.lineWidth = 2;
+    ctx.stroke();
     
+    // Cara (dentro de la estrella)
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillRect(canvas.width / 2 - 6, canvas.height - juego.cinematicAltura - 35, 5, 5);
+    ctx.beginPath();
+    ctx.arc(0, -8, 5, 0, Math.PI * 2);
+    ctx.fill();
     ctx.fillStyle = '#000000';
-    ctx.fillRect(canvas.width / 2 - 5, canvas.height - juego.cinematicAltura - 34, 2, 2);
+    ctx.beginPath();
+    ctx.arc(-2, -10, 1.5, 0, Math.PI * 2);
+    ctx.arc(2, -10, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#2C3E50';
+    ctx.beginPath();
+    ctx.ellipse(0, -2, 3, 2, 0, 0, Math.PI * 2);
+    ctx.fill();
     
-    ctx.font = '18px "Courier New", monospace';
+    // Brazos (a los costados, casi horizontales)
+    ctx.beginPath();
+    ctx.moveTo(-18, 5);
+    ctx.lineTo(-32, 0);
+    ctx.lineTo(-28, 8);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(18, 5);
+    ctx.lineTo(32, 0);
+    ctx.lineTo(28, 8);
+    ctx.fill();
+    
+    // Piernas (en diagonal hacia abajo)
+    ctx.beginPath();
+    ctx.moveTo(-10, 18);
+    ctx.lineTo(-20, 32);
+    ctx.lineTo(-6, 25);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(10, 18);
+    ctx.lineTo(20, 32);
+    ctx.lineTo(6, 25);
+    ctx.fill();
+    
+    ctx.restore(); // restaurar escala y traslación
+    
+    // Texto de felicitación
+    ctx.font = '24px "Courier New", monospace';
     ctx.fillStyle = '#FFD700';
     ctx.textAlign = 'center';
-    ctx.fillText('✨ ¡COLECCIONABLE DESBLOQUEADO! ✨', canvas.width / 2, 50);
+    ctx.fillText('✨ ¡NUEVA SKIN DESBLOQUEADA! ✨', canvas.width / 2, 60);
+    ctx.font = '16px "Courier New", monospace';
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText('SKIN ESTRELLA DORADA', canvas.width / 2, 100);
     
-    if (juego.cinematicAltura >= canvas.height - 150) {
-        ctx.font = '12px "Courier New", monospace';
-        ctx.fillStyle = '#FFFFFF';
-        ctx.fillText('Presiona ESPACIO para continuar', canvas.width / 2, canvas.height - 30);
+    if (juego.cinematicAltura >= alturaMaxima) {
+        ctx.font = '14px "Courier New", monospace';
+        ctx.fillStyle = '#FFFF00';
+        ctx.fillText('Presiona ESPACIO para continuar', canvas.width / 2, canvas.height - 40);
     }
     
     ctx.textAlign = 'left';
 }
 
+// ============================================
+// RESTO DEL CÓDIGO (igual)
+// ============================================
 function dibujar() {
     if (juego.pantalla === "menu") {
         dibujarMenu();
