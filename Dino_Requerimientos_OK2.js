@@ -848,6 +848,12 @@ function actualizarJuego() {
     }
 }
 
+// ============================================
+// DINO REQUERIMIENTOS - LEAN EDITION (CORREGIDO)
+// ============================================
+
+// ... (todo el código anterior se mantiene igual hasta la función procesarRespuestaTrivia)
+
 function procesarRespuestaTrivia() {
     if (!triviaModal) return;
     const resultado = triviaModal.getResultado();
@@ -858,6 +864,7 @@ function procesarRespuestaTrivia() {
         juego.respuestasCorrectas++;
         juego.puedeEsquivar = true;
         marcarPreguntaRespondida(preguntaId);
+        
         if (juego.respuestasCorrectas >= TOTAL_PREGUNTAS) {
             terminarJuegoPorCompletar();
             juego.juegoPausado = false;
@@ -866,16 +873,20 @@ function procesarRespuestaTrivia() {
             obstaculoEnPausa = null;
             return;
         }
+        
         if (obstaculo) {
             if (obstaculo.tipo === 'pajaro') dino.agachadoAutomatico();
             else dino.saltoAutomatico();
         }
+        
         const index = obstaculos.indexOf(obstaculoEnPausa);
         if (index !== -1) obstaculos.splice(index, 1);
+        
         const desbloqueados = juego.sombreros.filter(s => s.desbloqueado).length;
         reproducirAcierto();
         juego.confetti = crearConfetti(26);
         mostrarMensaje('✅ RESPUESTA CORRECTA');
+        
         if (juego.respuestasCorrectas >= desbloqueados * 2 && desbloqueados < SOMBREROS.length - 1) {
             juego.sombreros[desbloqueados].desbloqueado = true;
             mostrarMensaje(`🎉 NUEVO SOMBRERO: ${juego.sombreros[desbloqueados].nombre} 🎉`);
@@ -884,10 +895,12 @@ function procesarRespuestaTrivia() {
         }
     } else if (resultado === 'incorrecto') {
         juego.respuestasIncorrectas++;
+        // NO mostrar mensaje de error
+        // NO terminar el juego inmediatamente
+        // Solo inhabilitar la habilidad de esquivar
         juego.puedeEsquivar = false;
         marcarPreguntaRespondida(preguntaId);
-        juego.errorShake = 12;
-        reproducirError();
+        // El dinosaurio ahora NO puede esquivar y chocará con el obstáculo
     }
     
     juego.juegoPausado = false;
@@ -895,6 +908,9 @@ function procesarRespuestaTrivia() {
     triviaModal = null;
     obstaculoEnPausa = null;
 }
+
+// La función actualizarJuego() ya tiene la lógica de colisión:
+// Cuando detecta colisión y juego.puedeEsquivar === false, activa la explosión.
 
 // ============================================
 // DIBUJADO
