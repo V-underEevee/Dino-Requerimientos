@@ -1,5 +1,6 @@
 // ============================================
-// DINO REQUERIMIENTOS - LEAN EDITION (FINAL FUNCIONAL)
+// DINO REQUERIMIENTOS - LEAN EDITION (FINAL)
+// CON GAME OVER INMEDIATO AL FALLAR
 // ============================================
 
 const canvas = document.getElementById('gameCanvas');
@@ -94,7 +95,7 @@ const VELOCIDAD_SALTO = -14;
 const VELOCIDAD_BASE = 4;
 
 let contadorObstaculos = 0;
-let dino;
+let dino = null;
 let obstaculos = [];
 let sueloX = 0;
 let velocidadJuego = VELOCIDAD_BASE;
@@ -293,7 +294,7 @@ class Dinosaurio {
     }
     
     saltar() {
-        if (this.enSuelo && !this.agachado && juego.pantalla === "jugando" && juego.puedeEsquivar && !juego.juegoPausado && !juego.juegoCompletado) {
+        if (this.enSuelo && !this.agachado && juego.pantalla === "jugando" && juego.puedeEsquivar && !juego.juegoPausado && !juego.juegoCompletado && juegoActivo) {
             this.velY = VELOCIDAD_SALTO;
             this.enSuelo = false;
             this.saltando = true;
@@ -303,7 +304,7 @@ class Dinosaurio {
     }
     
     agachar(estaAgachado) {
-        if (this.enSuelo && juego.pantalla === "jugando" && juego.puedeEsquivar && !juego.juegoPausado && !juego.juegoCompletado) {
+        if (this.enSuelo && juego.pantalla === "jugando" && juego.puedeEsquivar && !juego.juegoPausado && !juego.juegoCompletado && juegoActivo) {
             this.agachado = estaAgachado;
             if (estaAgachado) {
                 this.ancho = 45;
@@ -422,7 +423,7 @@ class Dinosaurio {
             }
         }
         
-        if (!juego.puedeEsquivar && juego.pantalla === "jugando" && !juego.juegoCompletado) {
+        if (!juego.puedeEsquivar && juego.pantalla === "jugando" && !juego.juegoCompletado && juegoActivo) {
             ctx.font = '12px "Courier New", monospace';
             ctx.fillStyle = '#FF0000';
             ctx.textAlign = 'center';
@@ -461,7 +462,7 @@ class Obstaculo {
     }
     
     actualizar(velocidad) {
-        if (!juego.juegoPausado && !juego.juegoCompletado) this.x -= velocidad;
+        if (!juego.juegoPausado && !juego.juegoCompletado && juegoActivo) this.x -= velocidad;
     }
     
     dibujar() {
@@ -715,8 +716,9 @@ function generarObstaculo() {
 function actualizarJuego() {
     if (juego.pantalla !== "jugando") return;
     if (juego.juegoCompletado) return;
+    if (!juegoActivo) return;
     
-    if (!juego.juegoPausado && juegoActivo) {
+    if (!juego.juegoPausado) {
         dino.actualizar();
         sueloX -= velocidadJuego;
         if (sueloX <= -canvas.width) sueloX = 0;
@@ -744,6 +746,7 @@ function actualizarJuego() {
                 rectDino.x + rectDino.ancho > rectObs.x &&
                 rectDino.y < rectObs.y + rectObs.alto &&
                 rectDino.y + rectDino.alto > rectObs.y) {
+                
                 if (!juego.puedeEsquivar || !obs.preguntaAsignada) {
                     juegoActivo = false;
                     juego.pantalla = "gameover";
@@ -1107,7 +1110,6 @@ document.addEventListener('keyup', (e) => {
 cargarProgreso();
 reiniciarPreguntasDisponibles();
 actualizarPanelSombreros();
-dino = new Dinosaurio();
 
 const toggleBtn = document.getElementById('togglePanelBtn');
 const panelSombreros = document.getElementById('sombrerosPanel');
