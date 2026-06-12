@@ -1,6 +1,6 @@
 // ============================================
-// DINO REQUERIMIENTOS - LEAN EDITION (SIMPLIFICADA)
-// SIN GIF, SIN EXPLOSIÓN, SOLO GAME OVER AL FALLAR
+// DINO REQUERIMIENTOS - LEAN EDITION (FINAL)
+// CON GAME OVER INMEDIATO AL FALLAR
 // ============================================
 
 const canvas = document.getElementById('gameCanvas');
@@ -86,7 +86,6 @@ let juego = {
 
 let temporizadorMensaje = 0;
 let mensajeTemporal = "";
-let juegoActivo = true;
 
 // ============================================
 // CONSTANTES
@@ -101,6 +100,7 @@ let obstaculos = [];
 let sueloX = 0;
 let velocidadJuego = VELOCIDAD_BASE;
 let frameCounter = 0;
+let juegoActivo = true;
 let triviaActiva = false;
 let triviaModal = null;
 let obstaculoEnPausa = null;
@@ -294,7 +294,7 @@ class Dinosaurio {
     }
     
     saltar() {
-        if (this.enSuelo && !this.agachado && juego.pantalla === "jugando" && juego.puedeEsquivar && !juego.juegoPausado && !juego.juegoCompletado) {
+        if (this.enSuelo && !this.agachado && juego.pantalla === "jugando" && juego.puedeEsquivar && !juego.juegoPausado && !juego.juegoCompletado && juegoActivo) {
             this.velY = VELOCIDAD_SALTO;
             this.enSuelo = false;
             this.saltando = true;
@@ -304,7 +304,7 @@ class Dinosaurio {
     }
     
     agachar(estaAgachado) {
-        if (this.enSuelo && juego.pantalla === "jugando" && juego.puedeEsquivar && !juego.juegoPausado && !juego.juegoCompletado) {
+        if (this.enSuelo && juego.pantalla === "jugando" && juego.puedeEsquivar && !juego.juegoPausado && !juego.juegoCompletado && juegoActivo) {
             this.agachado = estaAgachado;
             if (estaAgachado) {
                 this.ancho = 45;
@@ -423,7 +423,7 @@ class Dinosaurio {
             }
         }
         
-        if (!juego.puedeEsquivar && juego.pantalla === "jugando" && !juego.juegoCompletado) {
+        if (!juego.puedeEsquivar && juego.pantalla === "jugando" && !juego.juegoCompletado && juegoActivo) {
             ctx.font = '12px "Courier New", monospace';
             ctx.fillStyle = '#FF0000';
             ctx.textAlign = 'center';
@@ -462,7 +462,7 @@ class Obstaculo {
     }
     
     actualizar(velocidad) {
-        if (!juego.juegoPausado && !juego.juegoCompletado) this.x -= velocidad;
+        if (!juego.juegoPausado && !juego.juegoCompletado && juegoActivo) this.x -= velocidad;
     }
     
     dibujar() {
@@ -489,7 +489,7 @@ class Obstaculo {
 }
 
 // ============================================
-// CLASE TRIVIA (con selección funcional)
+// CLASE TRIVIA
 // ============================================
 class TriviaModal {
     constructor(obstaculo, dino) {
@@ -664,6 +664,8 @@ function reiniciarJuego() {
     juego.juegoPausado = false;
     juego.juegoTerminado = false;
     juego.juegoCompletado = false;
+    juego.respuestasCorrectas = 0;
+    juego.respuestasIncorrectas = 0;
     contadorObstaculos = 0;
     reiniciarPreguntasDisponibles();
     juego.sombreroActual = 0;
@@ -714,6 +716,7 @@ function generarObstaculo() {
 function actualizarJuego() {
     if (juego.pantalla !== "jugando") return;
     if (juego.juegoCompletado) return;
+    if (!juegoActivo) return;
     
     if (!juego.juegoPausado) {
         dino.actualizar();
@@ -728,7 +731,7 @@ function actualizarJuego() {
             obs.actualizar(velocidadJuego);
             const distancia = Math.abs(obs.x - dino.x);
             
-            if (!triviaActiva && obs.preguntaAsignada && distancia < 85 && distancia > 15 && !juego.juegoPausado && !juego.juegoCompletado) {
+            if (!triviaActiva && obs.preguntaAsignada && distancia < 85 && distancia > 15 && !juego.juegoPausado && !juego.juegoCompletado && juegoActivo) {
                 juego.juegoPausado = true;
                 triviaActiva = true;
                 obstaculoEnPausa = obs;
@@ -744,19 +747,10 @@ function actualizarJuego() {
                 rectDino.y < rectObs.y + rectObs.alto &&
                 rectDino.y + rectDino.alto > rectObs.y) {
                 
-                if (!juego.puedeEsquivar) {
-                    // GAME OVER INMEDIATO
+                if (!juego.puedeEsquivar || !obs.preguntaAsignada) {
+                    juegoActivo = false;
+                    juego.pantalla = "gameover";
                     juego.errorShake = 12;
-                    juegoActivo = false;
-                    juego.pantalla = "gameover";
-                    if (juego.puntuacion > juego.record) {
-                        juego.record = juego.puntuacion;
-                        guardarProgreso();
-                    }
-                    return;
-                } else if (!obs.preguntaAsignada) {
-                    juegoActivo = false;
-                    juego.pantalla = "gameover";
                     if (juego.puntuacion > juego.record) {
                         juego.record = juego.puntuacion;
                         guardarProgreso();
@@ -816,7 +810,6 @@ function procesarRespuestaTrivia() {
         }
     } else if (resultado === 'incorrecto') {
         juego.respuestasIncorrectas++;
-        juego.puedeEsquivar = false;
         marcarPreguntaRespondida(preguntaId);
         juego.errorShake = 12;
         reproducirError();
@@ -899,7 +892,7 @@ function dibujarUI() {
     ctx.textAlign = 'left';
     ctx.fillText(`🏆 ${Math.floor(juego.puntuacion)}`, 15, 30);
     ctx.fillText(`✅ ${juego.respuestasCorrectas}/${TOTAL_PREGUNTAS}`, 15, 55);
-    if (!juego.puedeEsquivar && juego.pantalla === "jugando" && !juego.juegoCompletado) {
+    if (!juego.puedeEsquivar && juego.pantalla === "jugando" && !juego.juegoCompletado && juegoActivo) {
         ctx.fillStyle = '#FF0000';
         ctx.fillText(`⚠️ ESQUIVE INHABILITADO ⚠️`, canvas.width - 180, 30);
     }
@@ -940,7 +933,7 @@ function dibujarMenu() {
         '* Responde las 26 preguntas de LEAN para completar el juego',
         '* CLICK en opción para seleccionar',
         '* Presiona Z o ENTER para responder',
-        '* Si fallas, NO podrás esquivar el obstáculo',
+        '* Si fallas, el juego termina inmediatamente',
         '* Responde TODAS bien para DESBLOQUEAR UN COLECCIONABLE'
     ];
     for (let i = 0; i < instrucciones.length; i++) {
