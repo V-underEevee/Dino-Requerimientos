@@ -1,5 +1,6 @@
 // ============================================
-// DINO REQUERIMIENTOS - LEAN EDITION (FINAL)
+// DINO REQUERIMIENTOS - LEAN EDITION (SIMPLIFICADA)
+// SIN GIF, SIN EXPLOSIÓN, SOLO GAME OVER AL FALLAR
 // ============================================
 
 const canvas = document.getElementById('gameCanvas');
@@ -59,13 +60,6 @@ const SOMBREROS = [
 ];
 
 // ============================================
-// VARIABLES DE EXPLOSIÓN
-// ============================================
-let explosionActive = false;
-let explosionTimer = null;
-let explosionImg = null;
-
-// ============================================
 // ESTADO DEL JUEGO
 // ============================================
 let juego = {
@@ -92,7 +86,6 @@ let juego = {
 
 let temporizadorMensaje = 0;
 let mensajeTemporal = "";
-let colisionPendiente = false;
 let juegoActivo = true;
 
 // ============================================
@@ -103,6 +96,14 @@ const VELOCIDAD_SALTO = -14;
 const VELOCIDAD_BASE = 4;
 
 let contadorObstaculos = 0;
+let dino = null;
+let obstaculos = [];
+let sueloX = 0;
+let velocidadJuego = VELOCIDAD_BASE;
+let frameCounter = 0;
+let triviaActiva = false;
+let triviaModal = null;
+let obstaculoEnPausa = null;
 
 // ============================================
 // FUNCIONES AUXILIARES
@@ -277,43 +278,6 @@ function cambiarSombrero(direccion) {
 }
 
 // ============================================
-// FUNCIONES DE EXPLOSIÓN
-// ============================================
-function mostrarExplosion(x, y) {
-    if (explosionActive) return;
-    const container = document.getElementById('explosionContainer');
-    if (!container) return;
-    container.style.left = (x - 40) + 'px';
-    container.style.top = (y - 40) + 'px';
-    container.style.display = 'block';
-    explosionActive = true;
-    if (!explosionImg) {
-        explosionImg = document.createElement('img');
-        explosionImg.src = 'https://tenor.com/es/view/explosion-gif-15587798242701274863';
-        explosionImg.style.width = '80px';
-        explosionImg.style.height = '80px';
-        explosionImg.style.position = 'absolute';
-        explosionImg.style.top = '0';
-        explosionImg.style.left = '0';
-        container.innerHTML = '';
-        container.appendChild(explosionImg);
-    }
-    if (explosionTimer) clearTimeout(explosionTimer);
-    explosionTimer = setTimeout(() => {
-        if (container) container.style.display = 'none';
-        explosionActive = false;
-        if (juego.pantalla === "jugando") {
-            juegoActivo = false;
-            juego.pantalla = "gameover";
-            if (juego.puntuacion > juego.record) {
-                juego.record = juego.puntuacion;
-                guardarProgreso();
-            }
-        }
-    }, 800);
-}
-
-// ============================================
 // CLASE DINOSAURIO
 // ============================================
 class Dinosaurio {
@@ -330,7 +294,7 @@ class Dinosaurio {
     }
     
     saltar() {
-        if (this.enSuelo && !this.agachado && juego.pantalla === "jugando" && juego.puedeEsquivar && !juego.juegoPausado && !juego.juegoCompletado && !colisionPendiente) {
+        if (this.enSuelo && !this.agachado && juego.pantalla === "jugando" && juego.puedeEsquivar && !juego.juegoPausado && !juego.juegoCompletado) {
             this.velY = VELOCIDAD_SALTO;
             this.enSuelo = false;
             this.saltando = true;
@@ -340,7 +304,7 @@ class Dinosaurio {
     }
     
     agachar(estaAgachado) {
-        if (this.enSuelo && juego.pantalla === "jugando" && juego.puedeEsquivar && !juego.juegoPausado && !juego.juegoCompletado && !colisionPendiente) {
+        if (this.enSuelo && juego.pantalla === "jugando" && juego.puedeEsquivar && !juego.juegoPausado && !juego.juegoCompletado) {
             this.agachado = estaAgachado;
             if (estaAgachado) {
                 this.ancho = 45;
@@ -458,7 +422,8 @@ class Dinosaurio {
                 ctx.textAlign = 'left';
             }
         }
-        if (!juego.puedeEsquivar && juego.pantalla === "jugando" && !juego.juegoCompletado && !colisionPendiente) {
+        
+        if (!juego.puedeEsquivar && juego.pantalla === "jugando" && !juego.juegoCompletado) {
             ctx.font = '12px "Courier New", monospace';
             ctx.fillStyle = '#FF0000';
             ctx.textAlign = 'center';
@@ -497,7 +462,7 @@ class Obstaculo {
     }
     
     actualizar(velocidad) {
-        if (!juego.juegoPausado && !juego.juegoCompletado && !colisionPendiente) this.x -= velocidad;
+        if (!juego.juegoPausado && !juego.juegoCompletado) this.x -= velocidad;
     }
     
     dibujar() {
@@ -524,7 +489,7 @@ class Obstaculo {
 }
 
 // ============================================
-// CLASE TRIVIA - CORREGIDA (con selección visual)
+// CLASE TRIVIA (con selección funcional)
 // ============================================
 class TriviaModal {
     constructor(obstaculo, dino) {
@@ -535,10 +500,13 @@ class TriviaModal {
         this.opcionSeleccionada = -1;
         this.resultado = null;
         this.procesado = false;
+        this.posicionesOpciones = [];
     }
     
     dibujar() {
         if (!this.visible || !this.pregunta) return;
+        
+        this.posicionesOpciones = [];
         
         const panelAncho = 520;
         const lineHeight = 22;
@@ -568,7 +536,6 @@ class TriviaModal {
         const lineasPregunta = wrapText(this.pregunta.texto, maxTextoAncho);
         const opcionesX = [panelX + 30, panelX + 30 + opcionAncho + 20];
         
-        // Calcular altura de cada opción basada en su texto envuelto
         const lineasOpciones = this.pregunta.opciones.map(op => wrapText(op, opcionAncho - 50));
         const opcionAlturas = lineasOpciones.map(l => Math.max(65, 16 + l.length * 18));
         
@@ -588,57 +555,41 @@ class TriviaModal {
         const separadorY = preguntaY + lineasPregunta.length * lineHeight + 10;
         const opcionesY = separadorY + 18;
         
-        // Guardar posiciones para detectar clicks
-        this.posicionesOpciones = [];
-        
-        // Fondo del panel
         ctx.fillStyle = 'rgba(0, 0, 0, 0.92)';
         ctx.fillRect(panelX, panelY, panelAncho, panelAlto);
-        
-        // Borde
         ctx.strokeStyle = '#FFFFFF';
         ctx.lineWidth = 3;
         ctx.strokeRect(panelX, panelY, panelAncho, panelAlto);
-        
-        // Línea divisoria
         ctx.beginPath();
         ctx.moveTo(panelX + 20, separadorY);
         ctx.lineTo(panelX + panelAncho - 20, separadorY);
         ctx.stroke();
         
-        // Materia
         ctx.font = 'bold 14px "Courier New", monospace';
         ctx.fillStyle = '#FFFF00';
         ctx.textAlign = 'center';
         ctx.fillText(`[ ${this.pregunta.materia.toUpperCase()} ]`, canvas.width / 2, panelY + 30);
         
-        // Pregunta
         ctx.font = '15px "Courier New", monospace';
         ctx.fillStyle = '#FFFFFF';
         for (let i = 0; i < lineasPregunta.length; i++) {
             ctx.fillText(lineasPregunta[i], canvas.width / 2, preguntaY + i * lineHeight);
         }
         
-        // Opciones
         let currentY = opcionesY;
         for (let f = 0; f < filas; f++) {
             const altoFila = filaAlturas[f];
             for (let col = 0; col < 2; col++) {
                 const i = f * 2 + col;
                 if (i >= this.pregunta.opciones.length) continue;
-                
                 const x = opcionesX[col];
                 const y = currentY;
                 const lineasOp = lineasOpciones[i];
                 
-                // Guardar posición para detección de clicks
                 this.posicionesOpciones.push({ i, x, y, ancho: opcionAncho, alto: altoFila });
                 
-                // Fondo de la opción
                 ctx.fillStyle = '#222222';
                 ctx.fillRect(x, y, opcionAncho, altoFila);
-                
-                // Borde (amarillo si está seleccionada)
                 if (this.opcionSeleccionada === i) {
                     ctx.strokeStyle = '#FFD700';
                     ctx.lineWidth = 3;
@@ -647,14 +598,10 @@ class TriviaModal {
                     ctx.lineWidth = 2;
                 }
                 ctx.strokeRect(x, y, opcionAncho, altoFila);
-                
-                // Letra de opción (A, B, C, D)
                 ctx.font = 'bold 18px "Courier New", monospace';
                 ctx.fillStyle = this.opcionSeleccionada === i ? '#FFD700' : '#FFFFFF';
                 ctx.textAlign = 'center';
                 ctx.fillText(String.fromCharCode(65 + i), x + 20, y + 32);
-                
-                // Texto de la opción
                 ctx.font = '12px "Courier New", monospace';
                 ctx.fillStyle = this.opcionSeleccionada === i ? '#FFFFFF' : '#CCCCCC';
                 ctx.textAlign = 'left';
@@ -665,7 +612,6 @@ class TriviaModal {
             currentY += altoFila + espacioEntreFilas;
         }
         
-        // Instrucciones
         ctx.font = '11px "Courier New", monospace';
         ctx.fillStyle = '#888888';
         ctx.textAlign = 'center';
@@ -675,15 +621,10 @@ class TriviaModal {
     
     procesarClick(x, y) {
         if (!this.visible || this.procesado) return false;
-        
-        // Verificar si el click está dentro de alguna opción
-        if (this.posicionesOpciones) {
-            for (let op of this.posicionesOpciones) {
-                if (x >= op.x && x <= op.x + op.ancho && y >= op.y && y <= op.y + op.alto) {
-                    this.opcionSeleccionada = op.i;
-                    console.log("Opción seleccionada:", op.i);
-                    return true;
-                }
+        for (let op of this.posicionesOpciones) {
+            if (x >= op.x && x <= op.x + op.ancho && y >= op.y && y <= op.y + op.alto) {
+                this.opcionSeleccionada = op.i;
+                return true;
             }
         }
         return false;
@@ -706,27 +647,9 @@ class TriviaModal {
 }
 
 // ============================================
-// VARIABLES GLOBALES DEL JUEGO
-// ============================================
-let dino = new Dinosaurio();
-let obstaculos = [];
-let sueloX = 0;
-let velocidadJuego = VELOCIDAD_BASE;
-let frameCounter = 0;
-let triviaActiva = false;
-let triviaModal = null;
-let obstaculoEnPausa = null;
-
-// ============================================
 // FUNCIONES DEL JUEGO
 // ============================================
 function reiniciarJuego() {
-    const container = document.getElementById('explosionContainer');
-    if (container) container.style.display = 'none';
-    if (explosionTimer) clearTimeout(explosionTimer);
-    explosionActive = false;
-    colisionPendiente = false;
-    juego.intentos++;
     dino = new Dinosaurio();
     obstaculos = [];
     sueloX = 0;
@@ -791,37 +714,47 @@ function generarObstaculo() {
 function actualizarJuego() {
     if (juego.pantalla !== "jugando") return;
     if (juego.juegoCompletado) return;
-    if (!juego.juegoPausado && !colisionPendiente) {
+    
+    if (!juego.juegoPausado) {
         dino.actualizar();
         sueloX -= velocidadJuego;
         if (sueloX <= -canvas.width) sueloX = 0;
         velocidadJuego = VELOCIDAD_BASE + Math.floor(juego.puntuacion / 800);
         frameCounter++;
         if (frameCounter > 70) { generarObstaculo(); frameCounter = 0; }
+        
         for (let i = 0; i < obstaculos.length; i++) {
             const obs = obstaculos[i];
             obs.actualizar(velocidadJuego);
             const distancia = Math.abs(obs.x - dino.x);
-            if (!triviaActiva && obs.preguntaAsignada && distancia < 85 && distancia > 20 && !juego.juegoPausado && !juego.juegoCompletado) {
+            
+            if (!triviaActiva && obs.preguntaAsignada && distancia < 85 && distancia > 15 && !juego.juegoPausado && !juego.juegoCompletado) {
                 juego.juegoPausado = true;
                 triviaActiva = true;
                 obstaculoEnPausa = obs;
                 triviaModal = new TriviaModal(obs, dino);
                 return;
             }
+            
             const rectDino = dino.obtenerRect();
             const rectObs = obs.obtenerRect();
+            
             if (rectDino.x < rectObs.x + rectObs.ancho &&
                 rectDino.x + rectDino.ancho > rectObs.x &&
                 rectDino.y < rectObs.y + rectObs.alto &&
                 rectDino.y + rectDino.alto > rectObs.y) {
-                if (!juego.puedeEsquivar || !obs.preguntaAsignada) {
-                    colisionPendiente = true;
+                
+                if (!juego.puedeEsquivar) {
+                    // GAME OVER INMEDIATO
                     juego.errorShake = 12;
-                    const dinoRect = dino.obtenerRect();
-                    mostrarExplosion(dinoRect.x + 15, dinoRect.y + 25);
+                    juegoActivo = false;
+                    juego.pantalla = "gameover";
+                    if (juego.puntuacion > juego.record) {
+                        juego.record = juego.puntuacion;
+                        guardarProgreso();
+                    }
                     return;
-                } else {
+                } else if (!obs.preguntaAsignada) {
                     juegoActivo = false;
                     juego.pantalla = "gameover";
                     if (juego.puntuacion > juego.record) {
@@ -831,6 +764,7 @@ function actualizarJuego() {
                     return;
                 }
             }
+            
             if (obs.fueraDePantalla()) {
                 obstaculos.splice(i, 1);
                 i--;
@@ -851,6 +785,7 @@ function procesarRespuestaTrivia() {
         juego.respuestasCorrectas++;
         juego.puedeEsquivar = true;
         marcarPreguntaRespondida(preguntaId);
+        
         if (juego.respuestasCorrectas >= TOTAL_PREGUNTAS) {
             terminarJuegoPorCompletar();
             juego.juegoPausado = false;
@@ -859,16 +794,20 @@ function procesarRespuestaTrivia() {
             obstaculoEnPausa = null;
             return;
         }
+        
         if (obstaculo) {
             if (obstaculo.tipo === 'pajaro') dino.agachadoAutomatico();
             else dino.saltoAutomatico();
         }
+        
         const index = obstaculos.indexOf(obstaculoEnPausa);
         if (index !== -1) obstaculos.splice(index, 1);
+        
         const desbloqueados = juego.sombreros.filter(s => s.desbloqueado).length;
         reproducirAcierto();
         juego.confetti = crearConfetti(26);
         mostrarMensaje('✅ RESPUESTA CORRECTA');
+        
         if (juego.respuestasCorrectas >= desbloqueados * 2 && desbloqueados < 11) {
             juego.sombreros[desbloqueados].desbloqueado = true;
             mostrarMensaje(`🎉 NUEVO SOMBRERO: ${juego.sombreros[desbloqueados].nombre} 🎉`);
@@ -881,8 +820,17 @@ function procesarRespuestaTrivia() {
         marcarPreguntaRespondida(preguntaId);
         juego.errorShake = 12;
         reproducirError();
-        // No eliminar el obstáculo - el dinosaurio chocará
+        mostrarMensaje('❌ RESPUESTA INCORRECTA');
+        
+        // GAME OVER INMEDIATO
+        juegoActivo = false;
+        juego.pantalla = "gameover";
+        if (juego.puntuacion > juego.record) {
+            juego.record = juego.puntuacion;
+            guardarProgreso();
+        }
     }
+    
     juego.juegoPausado = false;
     triviaActiva = false;
     triviaModal = null;
@@ -951,7 +899,7 @@ function dibujarUI() {
     ctx.textAlign = 'left';
     ctx.fillText(`🏆 ${Math.floor(juego.puntuacion)}`, 15, 30);
     ctx.fillText(`✅ ${juego.respuestasCorrectas}/${TOTAL_PREGUNTAS}`, 15, 55);
-    if (!juego.puedeEsquivar && juego.pantalla === "jugando" && !juego.juegoCompletado && !colisionPendiente) {
+    if (!juego.puedeEsquivar && juego.pantalla === "jugando" && !juego.juegoCompletado) {
         ctx.fillStyle = '#FF0000';
         ctx.fillText(`⚠️ ESQUIVE INHABILITADO ⚠️`, canvas.width - 180, 30);
     }
@@ -992,7 +940,7 @@ function dibujarMenu() {
         '* Responde las 26 preguntas de LEAN para completar el juego',
         '* CLICK en opción para seleccionar',
         '* Presiona Z o ENTER para responder',
-        '* Si fallas, NO podrás esquivar el obstáculo y EXPLOTARÁS 💥',
+        '* Si fallas, NO podrás esquivar el obstáculo',
         '* Responde TODAS bien para DESBLOQUEAR UN COLECCIONABLE'
     ];
     for (let i = 0; i < instrucciones.length; i++) {
@@ -1127,7 +1075,9 @@ canvas.addEventListener('click', (e) => {
     const rect = canvas.getBoundingClientRect();
     const mouseX = (e.clientX - rect.left) * (canvas.width / rect.width);
     const mouseY = (e.clientY - rect.top) * (canvas.height / rect.height);
-    if (juego.pantalla === "jugando" && triviaActiva && triviaModal) triviaModal.procesarClick(mouseX, mouseY);
+    if (juego.pantalla === "jugando" && triviaActiva && triviaModal) {
+        triviaModal.procesarClick(mouseX, mouseY);
+    }
 });
 
 document.addEventListener('keydown', (e) => {
@@ -1142,7 +1092,7 @@ document.addEventListener('keydown', (e) => {
             if (tecla === 'Enter' || tecla === 'z' || tecla === 'Z') {
                 if (triviaModal.responder()) procesarRespuestaTrivia();
             }
-        } else if (!juego.juegoPausado && !juego.juegoCompletado && !colisionPendiente) {
+        } else if (!juego.juegoPausado && !juego.juegoCompletado && juegoActivo) {
             if (tecla === 'ArrowUp' || tecla === ' ') { e.preventDefault(); dino.saltar(); }
             else if (tecla === 'ArrowDown' || tecla === 'Shift') { e.preventDefault(); dino.agachar(true); }
         }
@@ -1156,7 +1106,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 document.addEventListener('keyup', (e) => {
-    if (juego.pantalla === "jugando" && !triviaActiva && !juego.juegoPausado && juego.puedeEsquivar && !juego.juegoCompletado && !colisionPendiente) {
+    if (juego.pantalla === "jugando" && !triviaActiva && !juego.juegoPausado && juego.puedeEsquivar && !juego.juegoCompletado && juegoActivo) {
         if (e.key === 'ArrowDown' || e.key === 'Shift') dino.agachar(false);
     }
 });
