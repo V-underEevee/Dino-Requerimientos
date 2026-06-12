@@ -1,6 +1,5 @@
 // ============================================
 // DINO REQUERIMIENTOS - LEAN EDITION (FINAL)
-// Flujo completamente corregido
 // ============================================
 
 const canvas = document.getElementById('gameCanvas');
