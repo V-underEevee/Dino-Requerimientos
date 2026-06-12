@@ -290,7 +290,7 @@ function mostrarExplosion(x, y) {
     explosionActive = true;
     if (!explosionImg) {
         explosionImg = document.createElement('img');
-        explosionImg.src = 'https://media.tenor.com/2jTq_9fRc1UAAAAi/boom-explosion.gif';
+        explosionImg.src = 'https://tenor.com/es/view/explosion-gif-15587798242701274863';
         explosionImg.style.width = '80px';
         explosionImg.style.height = '80px';
         explosionImg.style.position = 'absolute';
