@@ -1,6 +1,5 @@
 // ============================================
-// DINO REQUERIMIENTOS - LEAN EDITION (FINAL)
-// Flujo completamente corregido
+// DINO REQUERIMIENTOS - LEAN EDITION (CORREGIDO)
 // ============================================
 
 const canvas = document.getElementById('gameCanvas');
@@ -41,7 +40,7 @@ const PREGUNTAS = [
 const TOTAL_PREGUNTAS = PREGUNTAS.length;
 
 // ============================================
-// SOMBREROS COLECCIONABLES
+// SOMBREROS COLECCIONABLES (13 sombreros)
 // ============================================
 const SOMBREROS = [
     { id: 0, nombre: "CASUAL", emoji: "🧢", desbloqueado: true },
@@ -56,7 +55,7 @@ const SOMBREROS = [
     { id: 9, nombre: "TRAGEDY&COMEDY", emoji: "🎭", desbloqueado: false },
     { id: 10, nombre: "GORRO FIESTA", emoji: "🥳", desbloqueado: false },
     { id: 11, nombre: "WINRAR", emoji: "📚", desbloqueado: false },
-    { id: 12, nombre: "???", emoji: "⭐", desbloqueado: false, oculto: true }
+    { id: 12, nombre: "ESTRELLA DORADA", emoji: "⭐", desbloqueado: false }
 ];
 
 // ============================================
@@ -93,8 +92,6 @@ let juego = {
 
 let temporizadorMensaje = 0;
 let mensajeTemporal = "";
-let colisionPendiente = false;
-let juegoActivo = true;
 
 // ============================================
 // CONSTANTES
@@ -104,6 +101,7 @@ const VELOCIDAD_SALTO = -14;
 const VELOCIDAD_BASE = 4;
 
 let contadorObstaculos = 0;
+let colisionPendiente = false; // Nueva variable para controlar colisión
 
 // ============================================
 // FUNCIONES AUXILIARES
@@ -221,21 +219,17 @@ function dibujarConfetti() {
 }
 
 function guardarProgreso() {
-    const sombrerosAGuardar = juego.sombreros.filter(s => s.desbloqueado).map(s => ({ id: s.id, desbloqueado: s.desbloqueado }));
-    localStorage.setItem('sombreros', JSON.stringify(sombrerosAGuardar));
+    localStorage.setItem('sombreros', JSON.stringify(juego.sombreros.map(s => ({ id: s.id, desbloqueado: s.desbloqueado }))));
     localStorage.setItem('dinoRecord', juego.record);
 }
 
 function cargarProgreso() {
-    juego.sombreros = JSON.parse(JSON.stringify(SOMBREROS));
     const saved = localStorage.getItem('sombreros');
     if (saved) {
         const data = JSON.parse(saved);
         juego.sombreros.forEach(s => {
             const found = data.find(d => d.id === s.id);
-            if (found && found.desbloqueado) {
-                s.desbloqueado = true;
-            }
+            if (found) s.desbloqueado = found.desbloqueado;
         });
     }
     juego.record = parseInt(localStorage.getItem('dinoRecord')) || 0;
@@ -245,20 +239,23 @@ function actualizarPanelSombreros() {
     const contenedor = document.getElementById('sombrerosLista');
     if (!contenedor) return;
     contenedor.innerHTML = '';
-    const sombrerosMostrar = juego.sombreros.filter(s => s.desbloqueado);
-    sombrerosMostrar.forEach(s => {
+    juego.sombreros.forEach(s => {
         const item = document.createElement('div');
-        item.className = `sombrero-item ${s.id === juego.sombreroActual ? 'seleccionado' : ''}`;
-        item.style.cursor = 'pointer';
-        item.addEventListener('click', () => {
-            juego.sombreroActual = s.id;
-            mostrarMensaje(`🎩 ${s.nombre} equipado`);
-            actualizarPanelSombreros();
-            guardarProgreso();
-        });
+        item.className = `sombrero-item ${!s.desbloqueado ? 'bloqueado' : ''} ${s.id === juego.sombreroActual ? 'seleccionado' : ''}`;
+        if (s.desbloqueado) {
+            item.style.cursor = 'pointer';
+            item.addEventListener('click', () => {
+                juego.sombreroActual = s.id;
+                mostrarMensaje(`🎩 ${s.nombre} equipado`);
+                actualizarPanelSombreros();
+                guardarProgreso();
+            });
+        } else {
+            item.style.cursor = 'not-allowed';
+        }
         const emojiSpan = document.createElement('span'); emojiSpan.className = 'sombrero-emoji'; emojiSpan.textContent = s.emoji;
         const nombreSpan = document.createElement('span'); nombreSpan.className = 'sombrero-nombre'; nombreSpan.textContent = s.nombre;
-        const estadoSpan = document.createElement('span'); estadoSpan.className = 'sombrero-estado'; estadoSpan.textContent = s.id === juego.sombreroActual ? '✓' : '';
+        const estadoSpan = document.createElement('span'); estadoSpan.className = 'sombrero-estado'; estadoSpan.textContent = s.desbloqueado ? (s.id === juego.sombreroActual ? '✓' : '') : '🔒';
         item.appendChild(emojiSpan); item.appendChild(nombreSpan); item.appendChild(estadoSpan);
         contenedor.appendChild(item);
     });
@@ -282,12 +279,15 @@ function cambiarSombrero(direccion) {
 // ============================================
 function mostrarExplosion(x, y) {
     if (explosionActive) return;
+    
     const container = document.getElementById('explosionContainer');
     if (!container) return;
+    
     container.style.left = (x - 40) + 'px';
     container.style.top = (y - 40) + 'px';
     container.style.display = 'block';
     explosionActive = true;
+    
     if (!explosionImg) {
         explosionImg = document.createElement('img');
         explosionImg.src = 'https://tenor.com/es/view/explosion-gif-15587798242701274863';
@@ -299,6 +299,7 @@ function mostrarExplosion(x, y) {
         container.innerHTML = '';
         container.appendChild(explosionImg);
     }
+    
     if (explosionTimer) clearTimeout(explosionTimer);
     explosionTimer = setTimeout(() => {
         if (container) container.style.display = 'none';
@@ -331,7 +332,7 @@ class Dinosaurio {
     }
     
     saltar() {
-        if (this.enSuelo && !this.agachado && juego.pantalla === "jugando" && juego.puedeEsquivar && !juego.juegoPausado && !juego.juegoCompletado && !colisionPendiente) {
+        if (this.enSuelo && !this.agachado && juego.pantalla === "jugando" && juego.puedeEsquivar && !juego.juegoPausado && !juego.juegoCompletado) {
             this.velY = VELOCIDAD_SALTO;
             this.enSuelo = false;
             this.saltando = true;
@@ -341,7 +342,7 @@ class Dinosaurio {
     }
     
     agachar(estaAgachado) {
-        if (this.enSuelo && juego.pantalla === "jugando" && juego.puedeEsquivar && !juego.juegoPausado && !juego.juegoCompletado && !colisionPendiente) {
+        if (this.enSuelo && juego.pantalla === "jugando" && juego.puedeEsquivar && !juego.juegoPausado && !juego.juegoCompletado) {
             this.agachado = estaAgachado;
             if (estaAgachado) {
                 this.ancho = 45;
@@ -396,9 +397,9 @@ class Dinosaurio {
     
     dibujar() {
         const sombreroActualObj = juego.sombreros.find(s => s.id === juego.sombreroActual);
-        const esSkinEstrella = (sombreroActualObj && sombreroActualObj.id === 12 && sombreroActualObj.desbloqueado);
+        const esSombreroEstrella = (sombreroActualObj && sombreroActualObj.id === 12 && sombreroActualObj.desbloqueado);
         
-        if (esSkinEstrella) {
+        if (esSombreroEstrella) {
             const cx = this.x + this.ancho/2;
             const cy = this.y + this.alto/2;
             const rExt = 30;
@@ -419,6 +420,7 @@ class Dinosaurio {
             ctx.strokeStyle = "#FFA500";
             ctx.lineWidth = 2;
             ctx.stroke();
+            
             ctx.fillStyle = "#FFFFFF";
             ctx.beginPath();
             ctx.arc(this.x + this.ancho - 6, this.y + 10, 5, 0, Math.PI * 2);
@@ -429,6 +431,7 @@ class Dinosaurio {
             ctx.fill();
             ctx.fillStyle = "#2C3E50";
             ctx.fillRect(this.x + this.ancho - 10, this.y + 15, 8, 6);
+            
             if (this.enSuelo) {
                 const offset = Math.sin(this.animacionPata) * 2;
                 ctx.fillStyle = "#F1C40F";
@@ -438,6 +441,7 @@ class Dinosaurio {
         } else {
             ctx.fillStyle = juego.modoNoche ? '#4ECDC4' : '#2C3E50';
             ctx.fillRect(this.x, this.y, this.ancho, this.alto);
+            
             ctx.fillStyle = juego.modoNoche ? '#FFE66D' : 'white';
             ctx.beginPath();
             ctx.arc(this.x + this.ancho - 6, this.y + 10, 5, 0, Math.PI * 2);
@@ -446,11 +450,13 @@ class Dinosaurio {
             ctx.beginPath();
             ctx.arc(this.x + this.ancho - 6, this.y + 10, 2.5, 0, Math.PI * 2);
             ctx.fill();
+            
             if (this.enSuelo) {
                 const offset = Math.sin(this.animacionPata) * 2;
                 ctx.fillRect(this.x + 5, this.y + this.alto, 6, 8);
                 ctx.fillRect(this.x + 17 + offset, this.y + this.alto, 6, 8);
             }
+            
             if (sombreroActualObj && sombreroActualObj.desbloqueado && sombreroActualObj.id !== 12) {
                 ctx.font = '24px "Segoe UI Emoji"';
                 ctx.textAlign = 'center';
@@ -459,7 +465,8 @@ class Dinosaurio {
                 ctx.textAlign = 'left';
             }
         }
-        if (!juego.puedeEsquivar && juego.pantalla === "jugando" && !juego.juegoCompletado && !colisionPendiente) {
+        
+        if (!juego.puedeEsquivar && juego.pantalla === "jugando" && !juego.juegoCompletado) {
             ctx.font = '12px "Courier New", monospace';
             ctx.fillStyle = '#FF0000';
             ctx.textAlign = 'center';
@@ -525,7 +532,7 @@ class Obstaculo {
 }
 
 // ============================================
-// CLASE TRIVIA (simplificada para mantener el foco)
+// CLASE TRIVIA
 // ============================================
 class TriviaModal {
     constructor(obstaculo, dino) {
@@ -541,68 +548,93 @@ class TriviaModal {
     dibujar() {
         if (!this.visible || !this.pregunta) return;
         const panelAncho = 520;
-        const panelAlto = 300;
+        const lineHeight = 22;
         const panelX = (canvas.width - panelAncho) / 2;
-        const panelY = (canvas.height - panelAlto) / 2 - 20;
+        const maxTextoAncho = panelAncho - 60;
+        ctx.font = '15px "Courier New", monospace';
+        function wrapText(text, maxWidth) {
+            const palabras = text.split(' ');
+            const lineas = [];
+            let actual = '';
+            for (let p of palabras) {
+                const prueba = actual ? actual + ' ' + p : p;
+                if (ctx.measureText(prueba).width <= maxWidth) actual = prueba;
+                else { if (actual) lineas.push(actual); actual = p; }
+            }
+            if (actual) lineas.push(actual);
+            return lineas;
+        }
+        const opcionAncho = (panelAncho - 80) / 2;
+        const lineasPregunta = wrapText(this.pregunta.texto, maxTextoAncho);
+        const opcionesX = [panelX + 30, panelX + 30 + opcionAncho + 20];
+        const lineasOpciones = this.pregunta.opciones.map(op => wrapText(op, opcionAncho - 50));
+        const opcionAlturas = lineasOpciones.map(l => Math.max(70, 16 + l.length * 18));
+        const filas = Math.ceil(this.pregunta.opciones.length / 2);
+        const filaAlturas = [];
+        for (let f = 0; f < filas; f++) {
+            const primera = opcionAlturas[f * 2] || 0;
+            const segunda = opcionAlturas[f * 2 + 1] || 0;
+            filaAlturas[f] = Math.max(primera, segunda, 70);
+        }
+        const espacioEntreFilas = 12;
+        const altoTotalOpciones = filaAlturas.reduce((s, h) => s + h, 0) + espacioEntreFilas * (filas - 1);
+        const panelAlto = 120 + lineasPregunta.length * lineHeight + altoTotalOpciones + 30;
+        const panelY = (canvas.height - panelAlto) / 2 - 10;
+        const preguntaY = panelY + 55;
+        const separadorY = preguntaY + lineasPregunta.length * lineHeight + 10;
+        const opcionesY = separadorY + 18;
+        
         ctx.fillStyle = 'rgba(0, 0, 0, 0.92)';
         ctx.fillRect(panelX, panelY, panelAncho, panelAlto);
         ctx.strokeStyle = '#FFFFFF';
         ctx.lineWidth = 3;
         ctx.strokeRect(panelX, panelY, panelAncho, panelAlto);
         ctx.beginPath();
-        ctx.moveTo(panelX, panelY + 75);
-        ctx.lineTo(panelX + panelAncho, panelY + 75);
+        ctx.moveTo(panelX + 20, separadorY);
+        ctx.lineTo(panelX + panelAncho - 20, separadorY);
         ctx.stroke();
+        
         ctx.font = 'bold 14px "Courier New", monospace';
         ctx.fillStyle = '#FFFF00';
         ctx.textAlign = 'center';
         ctx.fillText(`[ ${this.pregunta.materia.toUpperCase()} ]`, canvas.width / 2, panelY + 30);
         ctx.font = '15px "Courier New", monospace';
         ctx.fillStyle = '#FFFFFF';
-        const palabras = this.pregunta.texto.split(' ');
-        let lineas = [];
-        let actual = '';
-        for (let p of palabras) {
-            const prueba = actual ? actual + ' ' + p : p;
-            if (ctx.measureText(prueba).width < panelAncho - 60) actual = prueba;
-            else { if (actual) lineas.push(actual); actual = p; }
+        for (let i = 0; i < lineasPregunta.length; i++) {
+            ctx.fillText(lineasPregunta[i], canvas.width / 2, preguntaY + i * lineHeight);
         }
-        if (actual) lineas.push(actual);
-        let yTexto = panelY + 55;
-        for (let l of lineas) {
-            ctx.fillText(l, canvas.width / 2, yTexto);
-            yTexto += 22;
-        }
-        const opcionAncho = (panelAncho - 80) / 2;
-        const opcionAlto = 55;
-        const opcionesX = [panelX + 30, panelX + 30 + opcionAncho + 20];
-        const opcionesY = panelY + 140;
-        for (let i = 0; i < this.pregunta.opciones.length; i++) {
-            const fila = Math.floor(i / 2);
-            const col = i % 2;
-            const x = opcionesX[col];
-            const y = opcionesY + (fila * (opcionAlto + 10));
-            ctx.fillStyle = '#222222';
-            ctx.fillRect(x, y, opcionAncho, opcionAlto);
-            if (this.opcionSeleccionada === i) {
-                ctx.strokeStyle = '#FFD700';
-                ctx.lineWidth = 3;
-            } else {
-                ctx.strokeStyle = '#666666';
-                ctx.lineWidth = 2;
+        
+        let currentY = opcionesY;
+        for (let f = 0; f < filas; f++) {
+            const altoFila = filaAlturas[f];
+            for (let col = 0; col < 2; col++) {
+                const i = f * 2 + col;
+                if (i >= this.pregunta.opciones.length) continue;
+                const x = opcionesX[col];
+                const y = currentY;
+                const lineasOp = lineasOpciones[i];
+                
+                ctx.fillStyle = '#222222';
+                ctx.fillRect(x, y, opcionAncho, altoFila);
+                ctx.strokeStyle = this.opcionSeleccionada === i ? '#FFD700' : '#666666';
+                ctx.lineWidth = this.opcionSeleccionada === i ? 3 : 2;
+                ctx.strokeRect(x, y, opcionAncho, altoFila);
+                
+                ctx.font = 'bold 18px "Courier New", monospace';
+                ctx.fillStyle = this.opcionSeleccionada === i ? '#FFD700' : '#FFFFFF';
+                ctx.textAlign = 'center';
+                ctx.fillText(String.fromCharCode(65 + i), x + 20, y + 30);
+                
+                ctx.font = '12px "Courier New", monospace';
+                ctx.fillStyle = this.opcionSeleccionada === i ? '#FFFFFF' : '#CCCCCC';
+                ctx.textAlign = 'left';
+                for (let j = 0; j < lineasOp.length; j++) {
+                    ctx.fillText(lineasOp[j], x + 45, y + 26 + j * 18);
+                }
             }
-            ctx.strokeRect(x, y, opcionAncho, opcionAlto);
-            ctx.font = 'bold 18px "Courier New", monospace';
-            ctx.fillStyle = this.opcionSeleccionada === i ? '#FFD700' : '#FFFFFF';
-            ctx.textAlign = 'center';
-            ctx.fillText(String.fromCharCode(65 + i), x + 20, y + 35);
-            ctx.font = '12px "Courier New", monospace';
-            ctx.fillStyle = this.opcionSeleccionada === i ? '#FFFFFF' : '#CCCCCC';
-            ctx.textAlign = 'left';
-            let textoOp = this.pregunta.opciones[i];
-            if (ctx.measureText(textoOp).width > opcionAncho - 50) textoOp = textoOp.substring(0, 25) + '...';
-            ctx.fillText(textoOp, x + 45, y + 35);
+            currentY += altoFila + espacioEntreFilas;
         }
+        
         ctx.font = '11px "Courier New", monospace';
         ctx.fillStyle = '#888888';
         ctx.textAlign = 'center';
@@ -615,22 +647,60 @@ class TriviaModal {
         const panelAncho = 520;
         const panelX = (canvas.width - panelAncho) / 2;
         const opcionAncho = (panelAncho - 80) / 2;
-        const opcionAlto = 55;
-        const opcionesX = [panelX + 30, panelX + 30 + opcionAncho + 20];
-        const opcionesY = panelY + 140;
+        const opcionesYBase = this.calcularPosiciones();
+        if (!opcionesYBase) return false;
+        
         for (let f = 0; f < 2; f++) {
             for (let col = 0; col < 2; col++) {
                 const i = f * 2 + col;
                 if (i >= this.pregunta.opciones.length) continue;
-                const opX = opcionesX[col];
-                const opY = opcionesY + (f * (opcionAlto + 10));
-                if (x >= opX && x <= opX + opcionAncho && y >= opY && y <= opY + opcionAlto) {
+                const opX = panelX + 30 + col * (opcionAncho + 20);
+                const opY = opcionesYBase.y + f * (opcionesYBase.altoFila + 12);
+                if (x >= opX && x <= opX + opcionAncho && y >= opY && y <= opY + opcionesYBase.altoFila) {
                     this.opcionSeleccionada = i;
                     return true;
                 }
             }
         }
         return false;
+    }
+    
+    calcularPosiciones() {
+        const panelAncho = 520;
+        const lineHeight = 22;
+        const panelX = (canvas.width - panelAncho) / 2;
+        const maxTextoAncho = panelAncho - 60;
+        ctx.font = '15px "Courier New", monospace';
+        function wrapText(text, maxWidth) {
+            const palabras = text.split(' ');
+            const lineas = [];
+            let actual = '';
+            for (let p of palabras) {
+                const prueba = actual ? actual + ' ' + p : p;
+                if (ctx.measureText(prueba).width <= maxWidth) actual = prueba;
+                else { if (actual) lineas.push(actual); actual = p; }
+            }
+            if (actual) lineas.push(actual);
+            return lineas;
+        }
+        const opcionAncho = (panelAncho - 80) / 2;
+        const lineasPregunta = wrapText(this.pregunta.texto, maxTextoAncho);
+        const lineasOpciones = this.pregunta.opciones.map(op => wrapText(op, opcionAncho - 50));
+        const opcionAlturas = lineasOpciones.map(l => Math.max(70, 16 + l.length * 18));
+        const filas = Math.ceil(this.pregunta.opciones.length / 2);
+        const filaAlturas = [];
+        for (let f = 0; f < filas; f++) {
+            const primera = opcionAlturas[f * 2] || 0;
+            const segunda = opcionAlturas[f * 2 + 1] || 0;
+            filaAlturas[f] = Math.max(primera, segunda, 70);
+        }
+        const espacioEntreFilas = 12;
+        const altoTotalOpciones = filaAlturas.reduce((s, h) => s + h, 0) + espacioEntreFilas * (filas - 1);
+        const panelAlto = 120 + lineasPregunta.length * lineHeight + altoTotalOpciones + 30;
+        const panelY = (canvas.height - panelAlto) / 2 - 10;
+        const separadorY = panelY + 55 + lineasPregunta.length * lineHeight + 10;
+        const opcionesY = separadorY + 18;
+        return { y: opcionesY, altoFila: filaAlturas[0] };
     }
     
     responder() {
@@ -657,6 +727,7 @@ let obstaculos = [];
 let sueloX = 0;
 let velocidadJuego = VELOCIDAD_BASE;
 let frameCounter = 0;
+let juegoActivo = true;
 let triviaActiva = false;
 let triviaModal = null;
 let obstaculoEnPausa = null;
@@ -670,6 +741,7 @@ function reiniciarJuego() {
     if (explosionTimer) clearTimeout(explosionTimer);
     explosionActive = false;
     colisionPendiente = false;
+    
     juego.intentos++;
     dino = new Dinosaurio();
     obstaculos = [];
@@ -699,11 +771,10 @@ function terminarJuegoPorCompletar() {
     juego.juegoPausado = true;
     const todasCorrectas = (juego.respuestasCorrectas === TOTAL_PREGUNTAS);
     if (todasCorrectas) {
-        const skinSecreta = juego.sombreros.find(s => s.id === 12);
-        if (skinSecreta && !skinSecreta.desbloqueado) {
-            skinSecreta.desbloqueado = true;
-            skinSecreta.nombre = "ESTRELLA DORADA";
-            mostrarMensaje('🎉 ¡HAS DESBLOQUEADO UN SOMBRERO SECRETO! 🎉');
+        const sombreroEstrella = juego.sombreros.find(s => s.id === 12);
+        if (sombreroEstrella && !sombreroEstrella.desbloqueado) {
+            sombreroEstrella.desbloqueado = true;
+            mostrarMensaje('🎉 ¡HAS DESBLOQUEADO EL SOMBRERO ESTRELLA DORADA! 🎉');
             actualizarPanelSombreros();
             guardarProgreso();
         }
@@ -746,7 +817,7 @@ function actualizarJuego() {
             const obs = obstaculos[i];
             obs.actualizar(velocidadJuego);
             const distancia = Math.abs(obs.x - dino.x);
-            if (!triviaActiva && obs.preguntaAsignada && distancia < 85 && distancia > 20 && !juego.juegoPausado && !juego.juegoCompletado) {
+            if (!triviaActiva && obs.preguntaAsignada && distancia < 100 && distancia > 15 && !juego.juegoPausado && !juego.juegoCompletado) {
                 juego.juegoPausado = true;
                 triviaActiva = true;
                 obstaculoEnPausa = obs;
@@ -765,14 +836,6 @@ function actualizarJuego() {
                     const dinoRect = dino.obtenerRect();
                     mostrarExplosion(dinoRect.x + 15, dinoRect.y + 25);
                     return;
-                } else {
-                    juegoActivo = false;
-                    juego.pantalla = "gameover";
-                    if (juego.puntuacion > juego.record) {
-                        juego.record = juego.puntuacion;
-                        guardarProgreso();
-                    }
-                    return;
                 }
             }
             if (obs.fueraDePantalla()) {
@@ -785,6 +848,12 @@ function actualizarJuego() {
     }
 }
 
+// ============================================
+// DINO REQUERIMIENTOS - LEAN EDITION (CORREGIDO)
+// ============================================
+
+// ... (todo el código anterior se mantiene igual hasta la función procesarRespuestaTrivia)
+
 function procesarRespuestaTrivia() {
     if (!triviaModal) return;
     const resultado = triviaModal.getResultado();
@@ -795,6 +864,7 @@ function procesarRespuestaTrivia() {
         juego.respuestasCorrectas++;
         juego.puedeEsquivar = true;
         marcarPreguntaRespondida(preguntaId);
+        
         if (juego.respuestasCorrectas >= TOTAL_PREGUNTAS) {
             terminarJuegoPorCompletar();
             juego.juegoPausado = false;
@@ -803,17 +873,21 @@ function procesarRespuestaTrivia() {
             obstaculoEnPausa = null;
             return;
         }
+        
         if (obstaculo) {
             if (obstaculo.tipo === 'pajaro') dino.agachadoAutomatico();
             else dino.saltoAutomatico();
         }
+        
         const index = obstaculos.indexOf(obstaculoEnPausa);
         if (index !== -1) obstaculos.splice(index, 1);
+        
         const desbloqueados = juego.sombreros.filter(s => s.desbloqueado).length;
         reproducirAcierto();
         juego.confetti = crearConfetti(26);
         mostrarMensaje('✅ RESPUESTA CORRECTA');
-        if (juego.respuestasCorrectas >= desbloqueados * 2 && desbloqueados < 11) {
+        
+        if (juego.respuestasCorrectas >= desbloqueados * 2 && desbloqueados < SOMBREROS.length - 1) {
             juego.sombreros[desbloqueados].desbloqueado = true;
             mostrarMensaje(`🎉 NUEVO SOMBRERO: ${juego.sombreros[desbloqueados].nombre} 🎉`);
             actualizarPanelSombreros();
@@ -821,17 +895,22 @@ function procesarRespuestaTrivia() {
         }
     } else if (resultado === 'incorrecto') {
         juego.respuestasIncorrectas++;
+        // NO mostrar mensaje de error
+        // NO terminar el juego inmediatamente
+        // Solo inhabilitar la habilidad de esquivar
         juego.puedeEsquivar = false;
         marcarPreguntaRespondida(preguntaId);
-        juego.errorShake = 12;
-        reproducirError();
-        // No eliminar el obstáculo - el dinosaurio chocará
+        // El dinosaurio ahora NO puede esquivar y chocará con el obstáculo
     }
+    
     juego.juegoPausado = false;
     triviaActiva = false;
     triviaModal = null;
     obstaculoEnPausa = null;
 }
+
+// La función actualizarJuego() ya tiene la lógica de colisión:
+// Cuando detecta colisión y juego.puedeEsquivar === false, activa la explosión.
 
 // ============================================
 // DIBUJADO
@@ -895,7 +974,8 @@ function dibujarUI() {
     ctx.textAlign = 'left';
     ctx.fillText(`🏆 ${Math.floor(juego.puntuacion)}`, 15, 30);
     ctx.fillText(`✅ ${juego.respuestasCorrectas}/${TOTAL_PREGUNTAS}`, 15, 55);
-    if (!juego.puedeEsquivar && juego.pantalla === "jugando" && !juego.juegoCompletado && !colisionPendiente) {
+    ctx.fillText(`📋 ${juego.preguntasDisponibles.length} restantes`, 15, 80);
+    if (!juego.puedeEsquivar && juego.pantalla === "jugando" && !juego.juegoCompletado) {
         ctx.fillStyle = '#FF0000';
         ctx.fillText(`⚠️ ESQUIVE INHABILITADO ⚠️`, canvas.width - 180, 30);
     }
@@ -969,6 +1049,15 @@ function dibujarGameOver() {
     ctx.fillStyle = '#CCCCCC';
     ctx.fillText(`RÉCORD: ${juego.record}`, canvas.width / 2, canvas.height / 2);
     ctx.fillText(`✅ CORRECTAS: ${juego.respuestasCorrectas} | ❌ INCORRECTAS: ${juego.respuestasIncorrectas}`, canvas.width / 2, canvas.height / 2 + 35);
+    
+    const sombreroEstrella = juego.sombreros.find(s => s.id === 12);
+    if (sombreroEstrella && sombreroEstrella.desbloqueado) {
+        ctx.fillStyle = '#FFD700';
+        ctx.fillText('⭐ SOMBRERO ESTRELLA DORADA DESBLOQUEADO ⭐', canvas.width / 2, canvas.height / 2 + 80);
+    } else if (juego.respuestasCorrectas === TOTAL_PREGUNTAS && juego.juegoTerminado) {
+        ctx.fillStyle = '#FFD700';
+        ctx.fillText('⭐ ¡DESBLOQUEASTE UN COLECCIONABLE! ⭐', canvas.width / 2, canvas.height / 2 + 80);
+    }
     ctx.font = '13px "Courier New", monospace';
     ctx.fillStyle = '#FFFFFF';
     ctx.fillText('Presiona ESPACIO para jugar de nuevo', canvas.width / 2, canvas.height / 2 + 130);
@@ -1033,10 +1122,10 @@ function dibujarCinematica() {
     ctx.font = '18px "Courier New", monospace';
     ctx.fillStyle = '#FFD700';
     ctx.textAlign = 'center';
-    ctx.fillText('✨ ¡HAS DESBLOQUEADO UN SECRETO! ✨', canvas.width / 2, 50);
+    ctx.fillText('✨ ¡NUEVA SKIN DESBLOQUEADA! ✨', canvas.width / 2, 50);
     ctx.font = '14px "Courier New", monospace';
     ctx.fillStyle = '#FFFFFF';
-    ctx.fillText('SOMBRERO ESTRELLA DORADA', canvas.width / 2, 90);
+    ctx.fillText('SKIN ESTRELLA DORADA', canvas.width / 2, 90);
     if (juego.cinematicAltura >= canvas.height - 120) {
         ctx.font = '14px "Courier New", monospace';
         ctx.fillStyle = '#FFFF00';
@@ -1140,7 +1229,7 @@ document.getElementById('cerrarModal').addEventListener('click', () => {
     document.getElementById('modalInstrucciones').style.display = 'none';
 });
 document.getElementById('resetProgresoBtn').addEventListener('click', () => {
-    if (confirm("¿Reiniciar todo el progreso? Perderás todos los sombreros desbloqueados.")) {
+    if (confirm("¿Reiniciar todo el progreso? Perderás todos los sombreros y la skin estrella desbloqueada.")) {
         localStorage.clear();
         location.reload();
     }
