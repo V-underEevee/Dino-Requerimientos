@@ -1,6 +1,6 @@
 // ============================================
 // DINO REQUERIMIENTOS - LEAN EDITION
-// Con 12 sombreros coleccionables
+// Con preguntas definitivas, cinemática mejorada y panel HTML
 // ============================================
 
 const canvas = document.getElementById('gameCanvas');
@@ -10,324 +10,38 @@ const ctx = canvas.getContext('2d');
 // PREGUNTAS DE LEAN (26 preguntas únicas)
 // ============================================
 const PREGUNTAS = [
-    {
-        id: 1,
-        texto: "¿Cuál es el objetivo principal de Lean?",
-        opciones: [
-            "Aumentar la cantidad de empleados",
-            "Maximizar el valor para el cliente eliminando desperdicios",
-            "Generar más documentación",
-            "Producir la mayor cantidad posible de productos"
-        ],
-        correcta: 1,
-        materia: "LEAN"
-    },
-    {
-        id: 2,
-        texto: "¿Dónde nació la metodología Lean?",
-        opciones: [
-            "Google",
-            "Microsoft",
-            "Toyota, en Japón",
-            "Amazon"
-        ],
-        correcta: 2,
-        materia: "LEAN"
-    },
-    {
-        id: 3,
-        texto: "¿Qué significa el principio de 'Definir el valor'?",
-        opciones: [
-            "Determinar cuánto cuesta el producto",
-            "Entender qué es lo que realmente valora el cliente",
-            "Calcular las ganancias de la empresa",
-            "Diseñar el producto más complejo posible"
-        ],
-        correcta: 1,
-        materia: "LEAN"
-    },
-    {
-        id: 4,
-        texto: "¿Qué busca eliminar Lean?",
-        opciones: [
-            "Los clientes",
-            "Las ventas",
-            "Los desperdicios o actividades que no aportan valor",
-            "Los productos terminados"
-        ],
-        correcta: 2,
-        materia: "LEAN"
-    },
-    {
-        id: 5,
-        texto: "¿Qué es el sistema Pull?",
-        opciones: [
-            "Producir solo cuando existe una demanda real",
-            "Trabajar más rápido que la competencia",
-            "Contratar más personal",
-            "Fabricar grandes cantidades por adelantado"
-        ],
-        correcta: 0,
-        materia: "LEAN"
-    },
-    {
-        id: 6,
-        texto: "¿Cómo se llama la mejora continua en Lean?",
-        opciones: [
-            "Scrum",
-            "Kanban",
-            "Kaizen",
-            "Sprint"
-        ],
-        correcta: 2,
-        materia: "LEAN"
-    },
-    {
-        id: 7,
-        texto: "¿Cuál de las siguientes opciones es uno de los siete desperdicios de Lean?",
-        opciones: [
-            "Innovación",
-            "Sobreproducción",
-            "Capacitación",
-            "Retroalimentación"
-        ],
-        correcta: 1,
-        materia: "LEAN"
-    },
-    {
-        id: 8,
-        texto: "¿Quién define qué actividades generan valor?",
-        opciones: [
-            "El gerente",
-            "El líder Lean",
-            "El cliente",
-            "El programador"
-        ],
-        correcta: 2,
-        materia: "LEAN"
-    },
-    {
-        id: 9,
-        texto: "¿Cuál es una ventaja de Lean?",
-        opciones: [
-            "Mayor desperdicio de recursos",
-            "Menor flexibilidad",
-            "Entregas más rápidas y mejor adaptación a cambios",
-            "Más burocracia"
-        ],
-        correcta: 2,
-        materia: "LEAN"
-    },
-    {
-        id: 10,
-        texto: "¿Qué significa 'Muda' en Lean?",
-        opciones: [
-            "Mejora continua",
-            "Desperdicio",
-            "Cliente",
-            "Calidad"
-        ],
-        correcta: 1,
-        materia: "LEAN"
-    },
-    {
-        id: 11,
-        texto: "¿Cuál de estas actividades agrega valor para el cliente en una app?",
-        opciones: [
-            "Reuniones innecesarias",
-            "Tareas duplicadas",
-            "Que la aplicación funcione correctamente",
-            "Esperas entre procesos"
-        ],
-        correcta: 2,
-        materia: "LEAN"
-    },
-    {
-        id: 12,
-        texto: "¿Qué busca el principio de flujo continuo?",
-        opciones: [
-            "Que el trabajo avance sin interrupciones innecesarias",
-            "Que todos trabajen más horas",
-            "Que se fabriquen más productos",
-            "Que existan más reuniones"
-        ],
-        correcta: 0,
-        materia: "LEAN"
-    },
-    {
-        id: 13,
-        texto: "¿Qué ocurre cuando una empresa tiene exceso de inventario?",
-        opciones: [
-            "Siempre aumenta sus ganancias",
-            "Genera costos y riesgos innecesarios",
-            "Mejora automáticamente la calidad",
-            "Reduce desperdicios"
-        ],
-        correcta: 1,
-        materia: "LEAN"
-    },
-    {
-        id: 14,
-        texto: "¿Qué característica diferencia a Lean de muchas metodologías tradicionales?",
-        opciones: [
-            "No acepta cambios",
-            "Solo trabaja al final del proyecto",
-            "Realiza entregas incrementales y acepta cambios",
-            "Exige una planificación rígida"
-        ],
-        correcta: 2,
-        materia: "LEAN"
-    },
-    {
-        id: 15,
-        texto: "¿Quiénes suelen conocer mejor los problemas del proceso?",
-        opciones: [
-            "Los clientes",
-            "Los directivos",
-            "Las personas que realizan el trabajo diariamente",
-            "Los proveedores"
-        ],
-        correcta: 2,
-        materia: "LEAN"
-    },
-    {
-        id: 16,
-        texto: "¿Cuál de las siguientes NO es una ventaja de Lean?",
-        opciones: [
-            "Reducción de desperdicios",
-            "Mayor rapidez en las entregas",
-            "Adaptación a cambios",
-            "Acumulación de inventario"
-        ],
-        correcta: 3,
-        materia: "LEAN"
-    },
-    {
-        id: 17,
-        texto: "¿Qué desperdicio ocurre cuando una persona debe esperar una aprobación para continuar trabajando?",
-        opciones: [
-            "Defectos",
-            "Esperas",
-            "Sobreproducción",
-            "Inventario"
-        ],
-        correcta: 1,
-        materia: "LEAN"
-    },
-    {
-        id: 18,
-        texto: "¿Qué empresa es considerada el caso más famoso de implementación de Lean?",
-        opciones: [
-            "Netflix",
-            "Samsung",
-            "Toyota",
-            "Facebook"
-        ],
-        correcta: 2,
-        materia: "LEAN"
-    },
-    {
-        id: 19,
-        texto: "¿Qué busca la mejora continua?",
-        opciones: [
-            "Mantener todo igual",
-            "Mejorar constantemente procesos y productos",
-            "Reducir la participación del equipo",
-            "Aumentar la documentación"
-        ],
-        correcta: 1,
-        materia: "LEAN"
-    },
-    {
-        id: 20,
-        texto: "¿Cuál de estas reuniones es común en Lean?",
-        opciones: [
-            "Reunión Kaizen",
-            "Reunión de casting",
-            "Reunión de marketing obligatorio",
-            "Reunión anual única"
-        ],
-        correcta: 0,
-        materia: "LEAN"
-    },
-    {
-        id: 21,
-        texto: "¿Qué significa entregar valor de forma incremental?",
-        opciones: [
-            "Entregar el producto completo al final",
-            "Entregar partes funcionales progresivamente",
-            "Entregar varias copias del mismo producto",
-            "Entregar productos defectuosos"
-        ],
-        correcta: 1,
-        materia: "LEAN"
-    },
-    {
-        id: 22,
-        texto: "¿Qué desperdicio representan los errores que obligan a rehacer trabajo?",
-        opciones: [
-            "Transporte",
-            "Defectos",
-            "Inventario",
-            "Esperas"
-        ],
-        correcta: 1,
-        materia: "LEAN"
-    },
-    {
-        id: 23,
-        texto: "¿Cuál es el papel de los directivos en Lean?",
-        opciones: [
-            "Ignorar las mejoras propuestas",
-            "Apoyar la implementación y eliminar obstáculos",
-            "Realizar todas las tareas del equipo",
-            "Reemplazar al cliente"
-        ],
-        correcta: 1,
-        materia: "LEAN"
-    },
-    {
-        id: 24,
-        texto: "¿Qué principio aplica Toyota cuando produce solo lo necesario?",
-        opciones: [
-            "Kaizen",
-            "Sistema Pull",
-            "Sobreproducción",
-            "Flujo interrumpido"
-        ],
-        correcta: 1,
-        materia: "LEAN"
-    },
-    {
-        id: 25,
-        texto: "¿Cuál de estas opciones NO forma parte de los siete desperdicios de Lean?",
-        opciones: [
-            "Sobreproducción",
-            "Esperas",
-            "Innovación",
-            "Defectos"
-        ],
-        correcta: 2,
-        materia: "LEAN"
-    },
-    {
-        id: 26,
-        texto: "Lean se enfoca principalmente en:",
-        opciones: [
-            "Generar más documentos",
-            "Cumplir un plan sin importar el cliente",
-            "Generar valor para el cliente",
-            "Realizar más reuniones"
-        ],
-        correcta: 2,
-        materia: "LEAN"
-    }
+    { id: 1, texto: "¿Cuál es el objetivo principal de Lean?", opciones: ["Aumentar la cantidad de empleados", "Maximizar el valor para el cliente eliminando desperdicios", "Generar más documentación", "Producir la mayor cantidad posible de productos"], correcta: 1, materia: "LEAN" },
+    { id: 2, texto: "¿Dónde nació la metodología Lean?", opciones: ["Google", "Microsoft", "Toyota, en Japón", "Amazon"], correcta: 2, materia: "LEAN" },
+    { id: 3, texto: "¿Qué significa el principio de 'Definir el valor'?", opciones: ["Determinar cuánto cuesta el producto", "Entender qué es lo que realmente valora el cliente", "Calcular las ganancias de la empresa", "Diseñar el producto más complejo posible"], correcta: 1, materia: "LEAN" },
+    { id: 4, texto: "¿Qué busca eliminar Lean?", opciones: ["Los clientes", "Las ventas", "Los desperdicios o actividades que no aportan valor", "Los productos terminados"], correcta: 2, materia: "LEAN" },
+    { id: 5, texto: "¿Qué es el sistema Pull?", opciones: ["Producir solo cuando existe una demanda real", "Trabajar más rápido que la competencia", "Contratar más personal", "Fabricar grandes cantidades por adelantado"], correcta: 0, materia: "LEAN" },
+    { id: 6, texto: "¿Cómo se llama la mejora continua en Lean?", opciones: ["Scrum", "Kanban", "Kaizen", "Sprint"], correcta: 2, materia: "LEAN" },
+    { id: 7, texto: "¿Cuál de las siguientes opciones es uno de los siete desperdicios de Lean?", opciones: ["Innovación", "Sobreproducción", "Capacitación", "Retroalimentación"], correcta: 1, materia: "LEAN" },
+    { id: 8, texto: "¿Quién define qué actividades generan valor?", opciones: ["El gerente", "El líder Lean", "El cliente", "El programador"], correcta: 2, materia: "LEAN" },
+    { id: 9, texto: "¿Cuál es una ventaja de Lean?", opciones: ["Mayor desperdicio de recursos", "Menor flexibilidad", "Entregas más rápidas y mejor adaptación a cambios", "Más burocracia"], correcta: 2, materia: "LEAN" },
+    { id: 10, texto: "¿Qué significa 'Muda' en Lean?", opciones: ["Mejora continua", "Desperdicio", "Cliente", "Calidad"], correcta: 1, materia: "LEAN" },
+    { id: 11, texto: "¿Cuál de estas actividades agrega valor para el cliente en una app?", opciones: ["Reuniones innecesarias", "Tareas duplicadas", "Que la aplicación funcione correctamente", "Esperas entre procesos"], correcta: 2, materia: "LEAN" },
+    { id: 12, texto: "¿Qué busca el principio de flujo continuo?", opciones: ["Que el trabajo avance sin interrupciones innecesarias", "Que todos trabajen más horas", "Que se fabriquen más productos", "Que existan más reuniones"], correcta: 0, materia: "LEAN" },
+    { id: 13, texto: "¿Qué ocurre cuando una empresa tiene exceso de inventario?", opciones: ["Siempre aumenta sus ganancias", "Genera costos y riesgos innecesarios", "Mejora automáticamente la calidad", "Reduce desperdicios"], correcta: 1, materia: "LEAN" },
+    { id: 14, texto: "¿Qué característica diferencia a Lean de muchas metodologías tradicionales?", opciones: ["No acepta cambios", "Solo trabaja al final del proyecto", "Realiza entregas incrementales y acepta cambios", "Exige una planificación rígida"], correcta: 2, materia: "LEAN" },
+    { id: 15, texto: "¿Quiénes suelen conocer mejor los problemas del proceso?", opciones: ["Los clientes", "Los directivos", "Las personas que realizan el trabajo diariamente", "Los proveedores"], correcta: 2, materia: "LEAN" },
+    { id: 16, texto: "¿Cuál de las siguientes NO es una ventaja de Lean?", opciones: ["Reducción de desperdicios", "Mayor rapidez en las entregas", "Adaptación a cambios", "Acumulación de inventario"], correcta: 3, materia: "LEAN" },
+    { id: 17, texto: "¿Qué desperdicio ocurre cuando una persona debe esperar una aprobación para continuar trabajando?", opciones: ["Defectos", "Esperas", "Sobreproducción", "Inventario"], correcta: 1, materia: "LEAN" },
+    { id: 18, texto: "¿Qué empresa es considerada el caso más famoso de implementación de Lean?", opciones: ["Netflix", "Samsung", "Toyota", "Facebook"], correcta: 2, materia: "LEAN" },
+    { id: 19, texto: "¿Qué busca la mejora continua?", opciones: ["Mantener todo igual", "Mejorar constantemente procesos y productos", "Reducir la participación del equipo", "Aumentar la documentación"], correcta: 1, materia: "LEAN" },
+    { id: 20, texto: "¿Cuál de estas reuniones es común en Lean?", opciones: ["Reunión Kaizen", "Reunión de casting", "Reunión de marketing obligatorio", "Reunión anual única"], correcta: 0, materia: "LEAN" },
+    { id: 21, texto: "¿Qué significa entregar valor de forma incremental?", opciones: ["Entregar el producto completo al final", "Entregar partes funcionales progresivamente", "Entregar varias copias del mismo producto", "Entregar productos defectuosos"], correcta: 1, materia: "LEAN" },
+    { id: 22, texto: "¿Qué desperdicio representan los errores que obligan a rehacer trabajo?", opciones: ["Transporte", "Defectos", "Inventario", "Esperas"], correcta: 1, materia: "LEAN" },
+    { id: 23, texto: "¿Cuál es el papel de los directivos en Lean?", opciones: ["Ignorar las mejoras propuestas", "Apoyar la implementación y eliminar obstáculos", "Realizar todas las tareas del equipo", "Reemplazar al cliente"], correcta: 1, materia: "LEAN" },
+    { id: 24, texto: "¿Qué principio aplica Toyota cuando produce solo lo necesario?", opciones: ["Kaizen", "Sistema Pull", "Sobreproducción", "Flujo interrumpido"], correcta: 1, materia: "LEAN" },
+    { id: 25, texto: "¿Cuál de estas opciones NO forma parte de los siete desperdicios de Lean?", opciones: ["Sobreproducción", "Esperas", "Innovación", "Defectos"], correcta: 2, materia: "LEAN" },
+    { id: 26, texto: "Lean se enfoca principalmente en:", opciones: ["Generar más documentos", "Cumplir un plan sin importar el cliente", "Generar valor para el cliente", "Realizar más reuniones"], correcta: 2, materia: "LEAN" }
 ];
 
 const TOTAL_PREGUNTAS = PREGUNTAS.length;
 
 // ============================================
-// SOMBREROS COLECCIONABLES (12 sombreros)
+// SOMBREROS COLECCIONABLES
 // ============================================
 const SOMBREROS = [
     { id: 0, nombre: "CASUAL", emoji: "🧢", desbloqueado: true },
@@ -341,7 +55,8 @@ const SOMBREROS = [
     { id: 8, nombre: "SCARY PUMPKIN", emoji: "🎃", desbloqueado: false },
     { id: 9, nombre: "TRAGEDY&COMEDY", emoji: "🎭", desbloqueado: false },
     { id: 10, nombre: "GORRO FIESTA", emoji: "🥳", desbloqueado: false },
-    { id: 11, nombre: "WINRAR", emoji: "📚", desbloqueado: false }
+    { id: 11, nombre: "WINRAR", emoji: "📚", desbloqueado: false },
+    { id: 12, nombre: "ESTRELLA DORADA", emoji: "⭐", desbloqueado: false }
 ];
 
 let skinEstrellaDesbloqueada = localStorage.getItem('skinEstrella') === 'true';
@@ -369,8 +84,14 @@ let juego = {
     puedeEsquivar: true,
     juegoPausado: false,
     juegoTerminado: false,
-    juegoCompletado: false
+    juegoCompletado: false,
+    errorShake: 0,
+    confetti: []
 };
+
+let temporizadorMensaje = 0;
+let mensajeTemporal = "";
+
 
 // ============================================
 // CONSTANTES
@@ -420,6 +141,45 @@ function marcarPreguntaRespondida(preguntaId) {
 function mostrarMensaje(texto) {
     mensajeTemporal = texto;
     temporizadorMensaje = 90;
+}
+
+function crearConfetti(cantidad) {
+    const colores = ['#FFD700', '#FF4D6D', '#4DE4FF', '#7DFF7D', '#FF99FF'];
+    const confetti = [];
+    for (let i = 0; i < cantidad; i++) {
+        confetti.push({
+            x: Math.random() * canvas.width,
+            y: -Math.random() * 40,
+            vx: (Math.random() - 0.5) * 2,
+            vy: 2 + Math.random() * 3,
+            size: 6 + Math.random() * 8,
+            rotation: Math.random() * Math.PI * 2,
+            rotationSpeed: (Math.random() - 0.5) * 0.2,
+            color: colores[Math.floor(Math.random() * colores.length)]
+        });
+    }
+    return confetti;
+}
+
+function dibujarConfetti() {
+    if (!juego.confetti || juego.confetti.length === 0) return;
+    for (let i = juego.confetti.length - 1; i >= 0; i--) {
+        const pieza = juego.confetti[i];
+        pieza.x += pieza.vx;
+        pieza.y += pieza.vy;
+        pieza.rotation += pieza.rotationSpeed;
+        pieza.vy += 0.08;
+        if (pieza.y > canvas.height + 20) {
+            juego.confetti.splice(i, 1);
+            continue;
+        }
+        ctx.save();
+        ctx.translate(pieza.x, pieza.y);
+        ctx.rotate(pieza.rotation);
+        ctx.fillStyle = pieza.color;
+        ctx.fillRect(-pieza.size / 2, -pieza.size / 2, pieza.size, pieza.size);
+        ctx.restore();
+    }
 }
 
 function cambiarSombrero(direccion) {
@@ -481,7 +241,7 @@ class Dinosaurio {
         this.agachado = false;
         this.animacionPata = 0;
         this.saltando = false;
-        this.escala = 1;
+        this.escala = 1; // Para cinemática
     }
     
     saltar() {
@@ -552,7 +312,7 @@ class Dinosaurio {
     
     dibujar() {
         if (skinActual === "estrella" && skinEstrellaDesbloqueada) {
-            // Estrella de 5 puntas
+            // Estrella de 5 puntas (envolviendo al dinosaurio)
             const cx = this.x + this.ancho/2;
             const cy = this.y + this.alto/2;
             const rExt = 30;
@@ -574,7 +334,7 @@ class Dinosaurio {
             ctx.lineWidth = 2;
             ctx.stroke();
             
-            // Cara
+            // Cara (ojos, hocico) dentro de la estrella
             ctx.fillStyle = "#FFFFFF";
             ctx.beginPath();
             ctx.arc(this.x + this.ancho - 6, this.y + 10, 5, 0, Math.PI * 2);
@@ -586,7 +346,7 @@ class Dinosaurio {
             ctx.fillStyle = "#2C3E50";
             ctx.fillRect(this.x + this.ancho - 10, this.y + 15, 8, 6);
             
-            // Patitas
+            // Patitas (salen por debajo de la estrella)
             if (this.enSuelo) {
                 const offset = Math.sin(this.animacionPata) * 2;
                 ctx.fillStyle = "#F1C40F";
@@ -639,7 +399,7 @@ class Dinosaurio {
 }
 
 // ============================================
-// CLASE OBSTÁCULO (sin cambios)
+// CLASE OBSTÁCULO
 // ============================================
 class Obstaculo {
     constructor(tipo, x, esInicial = false) {
@@ -698,7 +458,7 @@ class Obstaculo {
 }
 
 // ============================================
-// CLASE TRIVIA (sin cambios)
+// CLASE TRIVIA
 // ============================================
 class TriviaModal {
     constructor(obstaculo, dino) {
@@ -1075,7 +835,7 @@ function procesarRespuestaTrivia() {
 }
 
 // ============================================
-// DIBUJADO (sin cambios)
+// DIBUJADO
 // ============================================
 function dibujarFondo() {
     if (juego.modoNoche) {
@@ -1256,12 +1016,13 @@ function dibujarCinematica() {
     dibujarFondo();
     dibujarSuelo();
     
+    // Animación de crecimiento
     juego.cinematicAltura += 3;
     if (juego.cinematicAltura > canvas.height - 120) {
         juego.cinematicAltura = canvas.height - 120;
     }
     
-    // Pilar central oscuro
+    // Pilar central (cuerpo oscuro)
     const pilarAncho = 40;
     const pilarX = canvas.width/2 - pilarAncho/2;
     const pilarAlto = juego.cinematicAltura;
@@ -1270,28 +1031,29 @@ function dibujarCinematica() {
     ctx.fillStyle = '#111111';
     ctx.fillRect(pilarX, pilarY, pilarAncho, pilarAlto);
     
-    // Base superior brillante
+    // Base superior del pilar (color según modo noche)
     const baseAltura = 15;
     if (juego.modoNoche) {
-        ctx.fillStyle = '#CCCCAA';
+        ctx.fillStyle = '#CCCCAA'; // Luz de luna
     } else {
-        ctx.fillStyle = '#FFE4B5';
+        ctx.fillStyle = '#FFE4B5'; // Luz solar natural
     }
     ctx.fillRect(pilarX - 10, pilarY - baseAltura, pilarAncho + 20, baseAltura);
     
-    // Dinosaurio creciente
+    // Dinosaurio (va creciendo de tamaño a medida que sube)
     const escala = 0.5 + (juego.cinematicAltura / (canvas.height - 120)) * 1.5;
     const dinoW = 28 * escala;
     const dinoH = 45 * escala;
     const dinoX = canvas.width/2 - dinoW/2;
     const dinoY = pilarY - dinoH - 5;
     
+    // Dibujar dinosaurio con skin estrella (aunque no esté desbloqueada, en la cinemática se muestra)
     ctx.save();
     ctx.translate(dinoX + dinoW/2, dinoY + dinoH/2);
     ctx.scale(escala, escala);
     ctx.translate(-(dinoX + dinoW/2), -(dinoY + dinoH/2));
     
-    // Estrella
+    // Estrella de 5 puntas (más grande que el cuerpo)
     const cx = dinoX + dinoW/2;
     const cy = dinoY + dinoH/2;
     const rExt = 30 * escala;
