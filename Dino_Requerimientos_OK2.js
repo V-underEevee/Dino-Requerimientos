@@ -525,7 +525,7 @@ class Obstaculo {
 }
 
 // ============================================
-// CLASE TRIVIA (simplificada para mantener el foco)
+// CLASE TRIVIA - CORREGIDA (con selección visual)
 // ============================================
 class TriviaModal {
     constructor(obstaculo, dino) {
@@ -540,69 +540,133 @@ class TriviaModal {
     
     dibujar() {
         if (!this.visible || !this.pregunta) return;
+        
         const panelAncho = 520;
-        const panelAlto = 300;
+        const lineHeight = 22;
         const panelX = (canvas.width - panelAncho) / 2;
-        const panelY = (canvas.height - panelAlto) / 2 - 20;
+        const maxTextoAncho = panelAncho - 60;
+        
+        ctx.font = '15px "Courier New", monospace';
+        
+        function wrapText(text, maxWidth) {
+            const palabras = text.split(' ');
+            const lineas = [];
+            let actual = '';
+            for (let p of palabras) {
+                const prueba = actual ? actual + ' ' + p : p;
+                if (ctx.measureText(prueba).width <= maxWidth) {
+                    actual = prueba;
+                } else {
+                    if (actual) lineas.push(actual);
+                    actual = p;
+                }
+            }
+            if (actual) lineas.push(actual);
+            return lineas;
+        }
+        
+        const opcionAncho = (panelAncho - 80) / 2;
+        const lineasPregunta = wrapText(this.pregunta.texto, maxTextoAncho);
+        const opcionesX = [panelX + 30, panelX + 30 + opcionAncho + 20];
+        
+        // Calcular altura de cada opción basada en su texto envuelto
+        const lineasOpciones = this.pregunta.opciones.map(op => wrapText(op, opcionAncho - 50));
+        const opcionAlturas = lineasOpciones.map(l => Math.max(65, 16 + l.length * 18));
+        
+        const filas = Math.ceil(this.pregunta.opciones.length / 2);
+        const filaAlturas = [];
+        for (let f = 0; f < filas; f++) {
+            const primera = opcionAlturas[f * 2] || 0;
+            const segunda = opcionAlturas[f * 2 + 1] || 0;
+            filaAlturas[f] = Math.max(primera, segunda, 65);
+        }
+        
+        const espacioEntreFilas = 12;
+        const altoTotalOpciones = filaAlturas.reduce((s, h) => s + h, 0) + espacioEntreFilas * (filas - 1);
+        const panelAlto = 120 + lineasPregunta.length * lineHeight + altoTotalOpciones + 30;
+        const panelY = (canvas.height - panelAlto) / 2 - 10;
+        const preguntaY = panelY + 55;
+        const separadorY = preguntaY + lineasPregunta.length * lineHeight + 10;
+        const opcionesY = separadorY + 18;
+        
+        // Guardar posiciones para detectar clicks
+        this.posicionesOpciones = [];
+        
+        // Fondo del panel
         ctx.fillStyle = 'rgba(0, 0, 0, 0.92)';
         ctx.fillRect(panelX, panelY, panelAncho, panelAlto);
+        
+        // Borde
         ctx.strokeStyle = '#FFFFFF';
         ctx.lineWidth = 3;
         ctx.strokeRect(panelX, panelY, panelAncho, panelAlto);
+        
+        // Línea divisoria
         ctx.beginPath();
-        ctx.moveTo(panelX, panelY + 75);
-        ctx.lineTo(panelX + panelAncho, panelY + 75);
+        ctx.moveTo(panelX + 20, separadorY);
+        ctx.lineTo(panelX + panelAncho - 20, separadorY);
         ctx.stroke();
+        
+        // Materia
         ctx.font = 'bold 14px "Courier New", monospace';
         ctx.fillStyle = '#FFFF00';
         ctx.textAlign = 'center';
         ctx.fillText(`[ ${this.pregunta.materia.toUpperCase()} ]`, canvas.width / 2, panelY + 30);
+        
+        // Pregunta
         ctx.font = '15px "Courier New", monospace';
         ctx.fillStyle = '#FFFFFF';
-        const palabras = this.pregunta.texto.split(' ');
-        let lineas = [];
-        let actual = '';
-        for (let p of palabras) {
-            const prueba = actual ? actual + ' ' + p : p;
-            if (ctx.measureText(prueba).width < panelAncho - 60) actual = prueba;
-            else { if (actual) lineas.push(actual); actual = p; }
+        for (let i = 0; i < lineasPregunta.length; i++) {
+            ctx.fillText(lineasPregunta[i], canvas.width / 2, preguntaY + i * lineHeight);
         }
-        if (actual) lineas.push(actual);
-        let yTexto = panelY + 55;
-        for (let l of lineas) {
-            ctx.fillText(l, canvas.width / 2, yTexto);
-            yTexto += 22;
-        }
-        const opcionAncho = (panelAncho - 80) / 2;
-        const opcionAlto = 55;
-        const opcionesX = [panelX + 30, panelX + 30 + opcionAncho + 20];
-        const opcionesY = panelY + 140;
-        for (let i = 0; i < this.pregunta.opciones.length; i++) {
-            const fila = Math.floor(i / 2);
-            const col = i % 2;
-            const x = opcionesX[col];
-            const y = opcionesY + (fila * (opcionAlto + 10));
-            ctx.fillStyle = '#222222';
-            ctx.fillRect(x, y, opcionAncho, opcionAlto);
-            if (this.opcionSeleccionada === i) {
-                ctx.strokeStyle = '#FFD700';
-                ctx.lineWidth = 3;
-            } else {
-                ctx.strokeStyle = '#666666';
-                ctx.lineWidth = 2;
+        
+        // Opciones
+        let currentY = opcionesY;
+        for (let f = 0; f < filas; f++) {
+            const altoFila = filaAlturas[f];
+            for (let col = 0; col < 2; col++) {
+                const i = f * 2 + col;
+                if (i >= this.pregunta.opciones.length) continue;
+                
+                const x = opcionesX[col];
+                const y = currentY;
+                const lineasOp = lineasOpciones[i];
+                
+                // Guardar posición para detección de clicks
+                this.posicionesOpciones.push({ i, x, y, ancho: opcionAncho, alto: altoFila });
+                
+                // Fondo de la opción
+                ctx.fillStyle = '#222222';
+                ctx.fillRect(x, y, opcionAncho, altoFila);
+                
+                // Borde (amarillo si está seleccionada)
+                if (this.opcionSeleccionada === i) {
+                    ctx.strokeStyle = '#FFD700';
+                    ctx.lineWidth = 3;
+                } else {
+                    ctx.strokeStyle = '#666666';
+                    ctx.lineWidth = 2;
+                }
+                ctx.strokeRect(x, y, opcionAncho, altoFila);
+                
+                // Letra de opción (A, B, C, D)
+                ctx.font = 'bold 18px "Courier New", monospace';
+                ctx.fillStyle = this.opcionSeleccionada === i ? '#FFD700' : '#FFFFFF';
+                ctx.textAlign = 'center';
+                ctx.fillText(String.fromCharCode(65 + i), x + 20, y + 32);
+                
+                // Texto de la opción
+                ctx.font = '12px "Courier New", monospace';
+                ctx.fillStyle = this.opcionSeleccionada === i ? '#FFFFFF' : '#CCCCCC';
+                ctx.textAlign = 'left';
+                for (let j = 0; j < lineasOp.length; j++) {
+                    ctx.fillText(lineasOp[j], x + 45, y + 28 + j * 18);
+                }
             }
-            ctx.strokeRect(x, y, opcionAncho, opcionAlto);
-            ctx.font = 'bold 18px "Courier New", monospace';
-            ctx.fillStyle = this.opcionSeleccionada === i ? '#FFD700' : '#FFFFFF';
-            ctx.textAlign = 'center';
-            ctx.fillText(String.fromCharCode(65 + i), x + 20, y + 35);
-            ctx.font = '12px "Courier New", monospace';
-            ctx.fillStyle = this.opcionSeleccionada === i ? '#FFFFFF' : '#CCCCCC';
-            ctx.textAlign = 'left';
-            let textoOp = this.pregunta.opciones[i];
-            if (ctx.measureText(textoOp).width > opcionAncho - 50) textoOp = textoOp.substring(0, 25) + '...';
-            ctx.fillText(textoOp, x + 45, y + 35);
+            currentY += altoFila + espacioEntreFilas;
         }
+        
+        // Instrucciones
         ctx.font = '11px "Courier New", monospace';
         ctx.fillStyle = '#888888';
         ctx.textAlign = 'center';
@@ -612,20 +676,13 @@ class TriviaModal {
     
     procesarClick(x, y) {
         if (!this.visible || this.procesado) return false;
-        const panelAncho = 520;
-        const panelX = (canvas.width - panelAncho) / 2;
-        const opcionAncho = (panelAncho - 80) / 2;
-        const opcionAlto = 55;
-        const opcionesX = [panelX + 30, panelX + 30 + opcionAncho + 20];
-        const opcionesY = panelY + 140;
-        for (let f = 0; f < 2; f++) {
-            for (let col = 0; col < 2; col++) {
-                const i = f * 2 + col;
-                if (i >= this.pregunta.opciones.length) continue;
-                const opX = opcionesX[col];
-                const opY = opcionesY + (f * (opcionAlto + 10));
-                if (x >= opX && x <= opX + opcionAncho && y >= opY && y <= opY + opcionAlto) {
-                    this.opcionSeleccionada = i;
+        
+        // Verificar si el click está dentro de alguna opción
+        if (this.posicionesOpciones) {
+            for (let op of this.posicionesOpciones) {
+                if (x >= op.x && x <= op.x + op.ancho && y >= op.y && y <= op.y + op.alto) {
+                    this.opcionSeleccionada = op.i;
+                    console.log("Opción seleccionada:", op.i);
                     return true;
                 }
             }
