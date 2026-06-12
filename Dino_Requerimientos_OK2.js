@@ -1047,22 +1047,25 @@ function dibujarCinematica() {
     const dinoX = canvas.width/2 - dinoW/2;
     const dinoY = pilarY - dinoH - 5;
     
-    // Dibujar dinosaurio con skin estrella (aunque no esté desbloqueada, en la cinemática se muestra)
     ctx.save();
     ctx.translate(dinoX + dinoW/2, dinoY + dinoH/2);
     ctx.scale(escala, escala);
     ctx.translate(-(dinoX + dinoW/2), -(dinoY + dinoH/2));
     
-    // Estrella de 5 puntas (más grande que el cuerpo)
+    // Estrella de 5 puntas - UNA PUNTA HACIA ARRIBA (rotación corregida)
     const cx = dinoX + dinoW/2;
     const cy = dinoY + dinoH/2;
     const rExt = 30 * escala;
     const rInt = 15 * escala;
     const puntas = 5;
+    
     ctx.beginPath();
+    // La primera punta (i=0) apunta hacia arriba (ángulo -90° o PI/2 * -1)
     for (let i = 0; i < puntas * 2; i++) {
+        // Calcular radio: exterior para pares, interior para impares
         let radio = i % 2 === 0 ? rExt : rInt;
-        let ang = Math.PI/2 + i * Math.PI / puntas;
+        // Ángulo: comenzamos desde -90° (arriba) y sumamos 36° por cada punto (360/5/2)
+        let ang = -Math.PI / 2 + i * (Math.PI / puntas);
         let x = cx + radio * Math.cos(ang);
         let y = cy + radio * Math.sin(ang);
         if (i === 0) ctx.moveTo(x, y);
@@ -1075,33 +1078,75 @@ function dibujarCinematica() {
     ctx.lineWidth = 2;
     ctx.stroke();
     
-    // Cara
+    // Ojos del dinosaurio dentro de la estrella
     ctx.fillStyle = "#FFFFFF";
     ctx.beginPath();
-    ctx.arc(cx + (dinoW/2 - 6) * escala, cy + (dinoH/2 - 20) * escala, 5 * escala, 0, Math.PI * 2);
+    ctx.ellipse(cx - 6 * escala, cy - 8 * escala, 5 * escala, 6 * escala, 0, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = "#000000";
     ctx.beginPath();
-    ctx.arc(cx + (dinoW/2 - 6) * escala, cy + (dinoH/2 - 20) * escala, 2.5 * escala, 0, Math.PI * 2);
+    ctx.ellipse(cx - 6 * escala, cy - 8 * escala, 2.5 * escala, 3 * escala, 0, 0, Math.PI * 2);
     ctx.fill();
+    
+    // Ojo derecho (más pequeño)
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.ellipse(cx + 4 * escala, cy - 8 * escala, 3 * escala, 4 * escala, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#000000";
+    ctx.beginPath();
+    ctx.ellipse(cx + 4 * escala, cy - 8 * escala, 1.5 * escala, 2 * escala, 0, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Hocico
     ctx.fillStyle = "#2C3E50";
-    ctx.fillRect(cx + (dinoW/2 - 10) * escala, cy + (dinoH/2 - 15) * escala, 8 * escala, 6 * escala);
+    ctx.fillRect(cx - 4 * escala, cy - 2 * escala, 12 * escala, 6 * escala);
+    
+    // Nariz
+    ctx.fillStyle = "#1A252F";
+    ctx.fillRect(cx + 2 * escala, cy, 3 * escala, 3 * escala);
     
     ctx.restore();
     
-    // Texto
-    ctx.font = '18px "Courier New", monospace';
+    // Efecto de brillo alrededor de la estrella
+    ctx.save();
+    ctx.shadowBlur = 20;
+    ctx.shadowColor = '#FFD700';
+    for (let i = 0; i < 8; i++) {
+        const ang = (Date.now() / 500 + i * Math.PI / 4) % (Math.PI * 2);
+        const x = canvas.width/2 + Math.cos(ang) * 60;
+        const y = canvas.height/2 - 100 + Math.sin(ang) * 30 + Math.sin(Date.now() / 300) * 10;
+        ctx.beginPath();
+        ctx.arc(x, y, 3, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 215, 0, ${0.5 + Math.sin(Date.now() / 200 + i) * 0.3})`;
+        ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    ctx.restore();
+    
+    // Texto principal
+    ctx.font = 'bold 20px "Courier New", monospace';
     ctx.fillStyle = '#FFD700';
     ctx.textAlign = 'center';
-    ctx.fillText('✨ ¡NUEVA SKIN DESBLOQUEADA! ✨', canvas.width / 2, 50);
-    ctx.font = '14px "Courier New", monospace';
-    ctx.fillStyle = '#FFFFFF';
-    ctx.fillText('SKIN ESTRELLA DORADA', canvas.width / 2, 90);
+    ctx.fillText('✨ ¡HAS DESBLOQUEADO UN SECRETO! ✨', canvas.width / 2, 50);
     
+    ctx.font = '16px "Courier New", monospace';
+    ctx.fillStyle = '#FFFFFF';
+    ctx.fillText('SOMBRERO ESTRELLA DORADA', canvas.width / 2, 90);
+    
+    // Partículas de confeti alrededor
     if (juego.cinematicAltura >= canvas.height - 120) {
         ctx.font = '14px "Courier New", monospace';
         ctx.fillStyle = '#FFFF00';
         ctx.fillText('Presiona ESPACIO para continuar', canvas.width / 2, canvas.height - 40);
+        
+        // Confeti flotante
+        for (let i = 0; i < 30; i++) {
+            const x = (i * 137) % canvas.width;
+            const y = canvas.height - 60 + Math.sin(Date.now() / 300 + i) * 15;
+            ctx.fillStyle = `hsl(${i * 36}, 100%, 60%)`;
+            ctx.fillRect(x, y, 3, 6);
+        }
     }
     
     ctx.textAlign = 'left';
