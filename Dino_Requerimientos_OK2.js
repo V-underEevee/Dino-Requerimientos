@@ -844,6 +844,7 @@ function procesarRespuestaTrivia() {
             }
         }
         
+        // ELIMINAR EL OBSTÁCULO SOLO SI LA RESPUESTA ES CORRECTA
         const index = obstaculos.indexOf(obstaculoEnPausa);
         if (index !== -1) {
             obstaculos.splice(index, 1);
@@ -861,7 +862,7 @@ function procesarRespuestaTrivia() {
             guardarProgreso();
         }
         
-        // REANUDAR JUEGO
+        // REANUDAR JUEGO NORMALMENTE
         juego.juegoPausado = false;
         triviaActiva = false;
         triviaModal = null;
@@ -874,21 +875,30 @@ function procesarRespuestaTrivia() {
         juego.errorShake = 12;
         reproducirError();
         
-        // IMPORTANTE: REANUDAR EL JUEGO INMEDIATAMENTE
-        // El obstáculo DEBE seguir moviéndose
-        juego.juegoPausado = false;  // ← CLAVE: reanudar el juego
+        // IMPORTANTE: NO reanudar el juego inmediatamente
+        // El juego DEBE permanecer en pausa hasta que ocurra la colisión
+        // Pero necesitamos que el obstáculo SIGA EXISTIENDO
+        
+        // MANTENER el obstáculo en el array para que ocurra la colisión
+        // NO eliminar el obstáculo
+        
+        // CERRAR EL MODAL DE TRIVIA
         triviaActiva = false;
         triviaModal = null;
+        
+        // El juego sigue en pausa (juego.juegoPausado = true)
+        // En el próximo frame, se detectará la colisión
         obstaculoEnPausa = null;
         
-        // NO eliminar el obstáculo - el dinosaurio chocará con él
-        // NO terminar el juego - esperar a la colisión
+        // El juego se reanudará automáticamente en el siguiente frame
+        // pero como juego.puedeEsquivar es false, la colisión ocurrirá
+        setTimeout(() => {
+            if (juego.juegoPausado && !juego.juegoTerminado) {
+                juego.juegoPausado = false;
+            }
+        }, 50);
     }
 }
-        // LA PREGUNTA YA DESAPARECIÓ (visible = false en responder())
-        // NO terminar el juego - el dinosaurio chocará con este mismo obstáculo
-    
-    
 
 // ============================================
 // DIBUJADO
