@@ -1,6 +1,6 @@
 // ============================================
 // DINO REQUERIMIENTOS - LEAN EDITION (CORREGIDO)
-// Con colisión al fallar correctamente
+// CON COLISIÓN AL FALLAR Y PREGUNTAS ÚNICAS
 // ============================================
 
 const canvas = document.getElementById('gameCanvas');
@@ -97,6 +97,7 @@ const VELOCIDAD_SALTO = -14;
 const VELOCIDAD_BASE = 4;
 
 let contadorObstaculos = 0;
+let respuestaEnProceso = false; // ← NUEVO: evita respuestas múltiples
 
 // ============================================
 // FUNCIONES AUXILIARES
@@ -115,17 +116,11 @@ function reiniciarPreguntasDisponibles() {
     juego.respuestasCorrectas = 0;
     juego.respuestasIncorrectas = 0;
     juego.juegoCompletado = false;
-    console.log("Preguntas disponibles al reiniciar:", juego.preguntasDisponibles.length);
 }
 
 function obtenerSiguientePregunta() {
-    if (juego.preguntasDisponibles.length === 0) {
-        console.log("No hay más preguntas disponibles");
-        return null;
-    }
-    const pregunta = juego.preguntasDisponibles.shift();
-    console.log("Obteniendo y eliminando pregunta ID:", pregunta.id, "Restantes:", juego.preguntasDisponibles.length);
-    return pregunta;
+    if (juego.preguntasDisponibles.length === 0) return null;
+    return juego.preguntasDisponibles.shift();
 }
 
 function marcarPreguntaRespondida(preguntaId) {
@@ -294,7 +289,6 @@ class Dinosaurio {
         this.agachado = false;
         this.animacionPata = 0;
         this.saltando = false;
-        this.escala = 1;
     }
     
     saltar() {
@@ -352,14 +346,12 @@ class Dinosaurio {
             this.velY += GRAVEDAD;
             this.y += this.velY;
         }
-        
         if (this.y >= canvas.height - 90) {
             this.y = canvas.height - 90;
             this.velY = 0;
             this.enSuelo = true;
             this.saltando = false;
         }
-        
         this.animacionPata = (this.animacionPata + 0.2) % (Math.PI * 2);
     }
     
@@ -507,7 +499,7 @@ class Obstaculo {
 }
 
 // ============================================
-// CLASE TRIVIA (con posiciones de opciones)
+// CLASE TRIVIA (CORREGIDA)
 // ============================================
 class TriviaModal {
     constructor(obstaculo, dino) {
@@ -653,7 +645,7 @@ class TriviaModal {
             const esCorrecta = (this.opcionSeleccionada === this.pregunta.correcta);
             this.resultado = esCorrecta ? 'correcto' : 'incorrecto';
             this.procesado = true;
-            this.visible = false;
+            this.visible = false;  // ← LA PREGUNTA DESAPARECE SIEMPRE
             return true;
         }
         return false;
@@ -699,6 +691,7 @@ function reiniciarJuego() {
     juego.juegoTerminado = false;
     juego.juegoCompletado = false;
     contadorObstaculos = 0;
+    respuestaEnProceso = false;
     
     reiniciarPreguntasDisponibles();
     
@@ -710,7 +703,6 @@ function reiniciarJuego() {
     skinActual = "normal";
     
     juego.pantalla = "jugando";
-    console.log("Juego reiniciado. Preguntas disponibles:", juego.preguntasDisponibles.length);
     actualizarPanelSombreros();
     guardarProgreso();
 }
@@ -722,14 +714,11 @@ function terminarJuegoPorCompletar() {
     juego.juegoPausado = true;
     const todasCorrectas = (juego.respuestasCorrectas === TOTAL_PREGUNTAS);
     
-    console.log("Juego completado. Correctas:", juego.respuestasCorrectas, "de", TOTAL_PREGUNTAS);
-    
     if (todasCorrectas && !skinEstrellaDesbloqueada) {
         skinEstrellaDesbloqueada = true;
         localStorage.setItem('skinEstrella', 'true');
         juego.pantalla = "cinematica";
         juego.cinematicAltura = 0;
-        juego.cinematicFrame = 0;
         return;
     }
     
@@ -737,7 +726,7 @@ function terminarJuegoPorCompletar() {
     juegoActivo = false;
     if (juego.puntuacion > juego.record) {
         juego.record = juego.puntuacion;
-        localStorage.setItem('dinoRecord', juego.record);
+        guardarProgreso();
     }
 }
 
@@ -745,24 +734,12 @@ function generarObstaculo() {
     if (juego.juegoCompletado) return;
     
     let tipo;
+    if (contadorObstaculos < 2) tipo = 'cactus';
+    else tipo = ['cactus', 'cactus_g', 'pajaro'][Math.floor(Math.random() * 3)];
     
-    if (contadorObstaculos < 2) {
-        tipo = 'cactus';
-    } else {
-        const tipos = ['cactus', 'cactus_g', 'pajaro'];
-        tipo = tipos[Math.floor(Math.random() * tipos.length)];
-    }
-    
-    const separacionBase = 220;
-    const separacionExtra = Math.floor(Math.random() * 60);
-    const separacionTotal = separacionBase + separacionExtra;
-    
+    const separacion = 220 + Math.floor(Math.random() * 60);
     let nuevaX = canvas.width;
-    if (obstaculos.length > 0) {
-        const ultimoObs = obstaculos[obstaculos.length - 1];
-        nuevaX = ultimoObs.x + separacionTotal;
-    }
-    
+    if (obstaculos.length > 0) nuevaX = obstaculos[obstaculos.length - 1].x + separacion;
     const esInicial = (contadorObstaculos < 2);
     obstaculos.push(new Obstaculo(tipo, nuevaX, esInicial));
     contadorObstaculos++;
@@ -774,28 +751,18 @@ function actualizarJuego() {
     
     if (!juego.juegoPausado && juegoActivo) {
         dino.actualizar();
-        
         sueloX -= velocidadJuego;
-        if (sueloX <= -canvas.width) {
-            sueloX = 0;
-        }
-        
+        if (sueloX <= -canvas.width) sueloX = 0;
         velocidadJuego = VELOCIDAD_BASE + Math.floor(juego.puntuacion / 800);
-        
         frameCounter++;
-        if (frameCounter > 70) {
-            generarObstaculo();
-            frameCounter = 0;
-        }
+        if (frameCounter > 70) { generarObstaculo(); frameCounter = 0; }
         
         for (let i = 0; i < obstaculos.length; i++) {
             const obs = obstaculos[i];
             obs.actualizar(velocidadJuego);
-            
             const distancia = Math.abs(obs.x - dino.x);
-            const rangoActivacion = 100;
             
-            if (!triviaActiva && obs.preguntaAsignada && distancia < rangoActivacion && distancia > 15 && !juego.juegoPausado && !juego.juegoCompletado && juegoActivo) {
+            if (!triviaActiva && obs.preguntaAsignada && distancia < 100 && distancia > 15 && !juego.juegoPausado && !juego.juegoCompletado && juegoActivo) {
                 juego.juegoPausado = true;
                 triviaActiva = true;
                 obstaculoEnPausa = obs;
@@ -813,7 +780,6 @@ function actualizarJuego() {
                 
                 // COLISIÓN DETECTADA
                 if (!juego.puedeEsquivar) {
-                    // Respuesta incorrecta previa - GAME OVER
                     juegoActivo = false;
                     juego.pantalla = "gameover";
                     juego.errorShake = 12;
@@ -823,7 +789,6 @@ function actualizarJuego() {
                     }
                     return;
                 } else if (!obs.preguntaAsignada) {
-                    // Obstáculo sin pregunta (tutorial) - GAME OVER
                     juegoActivo = false;
                     juego.pantalla = "gameover";
                     if (juego.puntuacion > juego.record) {
@@ -840,28 +805,26 @@ function actualizarJuego() {
                 juego.puntuacion += 50;
             }
         }
-        
         juego.puntuacion += 1;
     }
 }
 
 function procesarRespuestaTrivia() {
-    if (!triviaModal) return;
+    // EVITAR PROCESAMIENTO MÚLTIPLE
+    if (!triviaModal || triviaModal.procesado) return;
     
     const resultado = triviaModal.getResultado();
+    if (!resultado) return;
+    
     const obstaculo = obstaculoEnPausa;
     const preguntaId = obstaculo.preguntaAsignada.id;
-    
-    console.log("Respuesta procesada. Resultado:", resultado, "Pregunta ID:", preguntaId);
     
     if (resultado === 'correcto') {
         juego.respuestasCorrectas++;
         juego.puedeEsquivar = true;
-        
         marcarPreguntaRespondida(preguntaId);
         
         if (juego.respuestasCorrectas >= TOTAL_PREGUNTAS) {
-            console.log("¡ÚLTIMA PREGUNTA CORRECTA! Terminando juego inmediatamente...");
             terminarJuegoPorCompletar();
             juego.juegoPausado = false;
             triviaActiva = false;
@@ -901,17 +864,15 @@ function procesarRespuestaTrivia() {
         marcarPreguntaRespondida(preguntaId);
         juego.errorShake = 12;
         reproducirError();
-        // NO mostrar mensaje de incorrecto
+        // LA PREGUNTA YA DESAPARECIÓ (visible = false en responder())
         // NO terminar el juego - el dinosaurio chocará con este mismo obstáculo
-        // La pregunta desaparece (visible = false) y el obstáculo continúa
     }
     
+    // LIMPIAR TRIVIA
     juego.juegoPausado = false;
     triviaActiva = false;
     triviaModal = null;
     obstaculoEnPausa = null;
-    
-    console.log("Preguntas restantes:", juego.preguntasDisponibles.length);
 }
 
 // ============================================
@@ -1170,25 +1131,9 @@ function dibujarCinematica() {
     
     ctx.fillStyle = "#2C3E50";
     ctx.fillRect(cx - 4 * escala, cy - 2 * escala, 12 * escala, 6 * escala);
-    
     ctx.fillStyle = "#1A252F";
     ctx.fillRect(cx + 2 * escala, cy, 3 * escala, 3 * escala);
     
-    ctx.restore();
-    
-    ctx.save();
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = '#FFD700';
-    for (let i = 0; i < 8; i++) {
-        const ang = (Date.now() / 500 + i * Math.PI / 4) % (Math.PI * 2);
-        const x = canvas.width/2 + Math.cos(ang) * 60;
-        const y = canvas.height/2 - 100 + Math.sin(ang) * 30 + Math.sin(Date.now() / 300) * 10;
-        ctx.beginPath();
-        ctx.arc(x, y, 3, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 215, 0, ${0.5 + Math.sin(Date.now() / 200 + i) * 0.3})`;
-        ctx.fill();
-    }
-    ctx.shadowBlur = 0;
     ctx.restore();
     
     ctx.font = 'bold 20px "Courier New", monospace';
@@ -1217,25 +1162,28 @@ function dibujarCinematica() {
 }
 
 function dibujar() {
+    const shakeOffset = juego.errorShake > 0 ? (Math.random() * 2 - 1) * 6 : 0;
+    ctx.save();
+    if (shakeOffset) ctx.translate(shakeOffset, 0);
+    
     if (juego.pantalla === "menu") {
         dibujarMenu();
     } else if (juego.pantalla === "jugando") {
         dibujarFondo();
         dibujarSuelo();
         dino.dibujar();
-        for (let obs of obstaculos) {
-            obs.dibujar();
-        }
+        for (let obs of obstaculos) obs.dibujar();
         dibujarUI();
-        
-        if (triviaActiva && triviaModal) {
-            triviaModal.dibujar();
-        }
+        if (juego.confetti && juego.confetti.length) dibujarConfetti();
+        if (triviaActiva && triviaModal) triviaModal.dibujar();
     } else if (juego.pantalla === "gameover") {
         dibujarGameOver();
     } else if (juego.pantalla === "cinematica") {
         dibujarCinematica();
     }
+    
+    ctx.restore();
+    if (juego.errorShake > 0) juego.errorShake--;
 }
 
 // ============================================
@@ -1275,11 +1223,14 @@ document.addEventListener('keydown', (e) => {
             return;
         }
         
-        if (triviaActiva && triviaModal) {
+        if (triviaActiva && triviaModal && !respuestaEnProceso) {
             if (tecla === 'Enter' || tecla === 'z' || tecla === 'Z') {
+                e.preventDefault();
+                respuestaEnProceso = true;
                 if (triviaModal.responder()) {
                     procesarRespuestaTrivia();
                 }
+                setTimeout(() => { respuestaEnProceso = false; }, 200);
             }
         } else if (!juego.juegoPausado && !juego.juegoCompletado && juegoActivo) {
             if (tecla === 'ArrowUp' || tecla === ' ') {
@@ -1350,15 +1301,27 @@ function gameLoop() {
 gameLoop();
 
 // Botones HTML
-document.getElementById('instruccionesBtn').addEventListener('click', () => {
-    document.getElementById('modalInstrucciones').style.display = 'flex';
-});
-document.getElementById('cerrarModal').addEventListener('click', () => {
-    document.getElementById('modalInstrucciones').style.display = 'none';
-});
-document.getElementById('resetProgresoBtn').addEventListener('click', () => {
-    if (confirm("¿Reiniciar todo el progreso? Perderás todos los sombreros y la skin estrella desbloqueada.")) {
-        localStorage.clear();
-        location.reload();
-    }
-});
+const instruccionesBtn = document.getElementById('instruccionesBtn');
+const cerrarModal = document.getElementById('cerrarModal');
+const resetProgresoBtn = document.getElementById('resetProgresoBtn');
+
+if (instruccionesBtn) {
+    instruccionesBtn.addEventListener('click', () => {
+        const modal = document.getElementById('modalInstrucciones');
+        if (modal) modal.style.display = 'flex';
+    });
+}
+if (cerrarModal) {
+    cerrarModal.addEventListener('click', () => {
+        const modal = document.getElementById('modalInstrucciones');
+        if (modal) modal.style.display = 'none';
+    });
+}
+if (resetProgresoBtn) {
+    resetProgresoBtn.addEventListener('click', () => {
+        if (confirm("¿Reiniciar todo el progreso? Perderás todos los sombreros y la skin estrella desbloqueada.")) {
+            localStorage.clear();
+            location.reload();
+        }
+    });
+}
