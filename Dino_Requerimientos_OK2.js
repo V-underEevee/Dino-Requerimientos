@@ -501,6 +501,9 @@ class Obstaculo {
 // ============================================
 // CLASE TRIVIA
 // ============================================
+// ============================================
+// SOLO REEMPLAZA LA CLASE TriviaModal COMPLETA
+// ============================================
 class TriviaModal {
     constructor(obstaculo, dino) {
         this.obstaculo = obstaculo;
@@ -510,13 +513,13 @@ class TriviaModal {
         this.opcionSeleccionada = -1;
         this.resultado = null;
         this.procesado = false;
-        this.posicionesOpciones = [];
+        this.posicionesOpciones = []; // Para guardar posiciones de las opciones
     }
     
     dibujar() {
         if (!this.visible || !this.pregunta) return;
         
-        this.posicionesOpciones = [];
+        this.posicionesOpciones = []; // Limpiar posiciones
         
         const panelAncho = 520;
         const lineHeight = 22;
@@ -596,6 +599,7 @@ class TriviaModal {
                 const y = currentY;
                 const lineasOp = lineasOpciones[i];
                 
+                // Guardar posición para detección de clicks
                 this.posicionesOpciones.push({ i, x, y, ancho: opcionAncho, alto: altoFila });
                 
                 ctx.fillStyle = '#222222';
@@ -656,6 +660,75 @@ class TriviaModal {
     }
 }
 
+// ============================================
+// REEMPLAZA LA FUNCIÓN procesarRespuestaTrivia
+// ============================================
+function procesarRespuestaTrivia() {
+    if (!triviaModal) return;
+    const resultado = triviaModal.getResultado();
+    const obstaculo = obstaculoEnPausa;
+    const preguntaId = obstaculo.preguntaAsignada.id;
+    
+    if (resultado === 'correcto') {
+        juego.respuestasCorrectas++;
+        juego.puedeEsquivar = true;
+        marcarPreguntaRespondida(preguntaId);
+        
+        if (juego.respuestasCorrectas >= TOTAL_PREGUNTAS) {
+            terminarJuegoPorCompletar();
+            juego.juegoPausado = false;
+            triviaActiva = false;
+            triviaModal = null;
+            obstaculoEnPausa = null;
+            return;
+        }
+        
+        if (obstaculo) {
+            if (obstaculo.tipo === 'pajaro') dino.agachadoAutomatico();
+            else dino.saltoAutomatico();
+        }
+        
+        const index = obstaculos.indexOf(obstaculoEnPausa);
+        if (index !== -1) obstaculos.splice(index, 1);
+        
+        const desbloqueados = juego.sombreros.filter(s => s.desbloqueado).length;
+        reproducirAcierto();
+        juego.confetti = crearConfetti(26);
+        mostrarMensaje('✅ RESPUESTA CORRECTA');
+        
+        if (juego.respuestasCorrectas >= desbloqueados * 2 && desbloqueados < SOMBREROS.length - 1) {
+            juego.sombreros[desbloqueados].desbloqueado = true;
+            mostrarMensaje(`🎉 NUEVO SOMBRERO: ${juego.sombreros[desbloqueados].nombre} 🎉`);
+            actualizarPanelSombreros();
+            guardarProgreso();
+        }
+    } else if (resultado === 'incorrecto') {
+        juego.respuestasIncorrectas++;
+        marcarPreguntaRespondida(preguntaId);
+        juego.errorShake = 12;
+        reproducirError();
+        mostrarMensaje('❌ RESPUESTA INCORRECTA');
+        
+        // GAME OVER INMEDIATO - LA PREGUNTA DESAPARECE Y EL JUEGO TERMINA
+        juegoActivo = false;
+        juego.pantalla = "gameover";
+        juego.juegoPausado = false;
+        triviaActiva = false;
+        triviaModal = null;
+        obstaculoEnPausa = null;
+        
+        if (juego.puntuacion > juego.record) {
+            juego.record = juego.puntuacion;
+            guardarProgreso();
+        }
+        return;
+    }
+    
+    juego.juegoPausado = false;
+    triviaActiva = false;
+    triviaModal = null;
+    obstaculoEnPausa = null;
+}
 // ============================================
 // VARIABLES GLOBALES
 // ============================================
