@@ -641,19 +641,15 @@ class TriviaModal {
     }
     
     responder() {
-        if (this.opcionSeleccionada !== -1 && !this.procesado) {
-            const esCorrecta = (this.opcionSeleccionada === this.pregunta.correcta);
-            this.resultado = esCorrecta ? 'correcto' : 'incorrecto';
-            this.procesado = true;
-            this.visible = false;  // ← LA PREGUNTA DESAPARECE SIEMPRE
-            return true;
-        }
-        return false;
+    if (this.opcionSeleccionada !== -1 && !this.procesado) {
+        const esCorrecta = (this.opcionSeleccionada === this.pregunta.correcta);
+        this.resultado = esCorrecta ? 'correcto' : 'incorrecto';
+        this.procesado = true;
+        this.visible = false;
+        return true;
     }
-    
-    getResultado() {
-        return this.resultado;
-    }
+    return false;
+}
 }
 
 // ============================================
@@ -749,6 +745,10 @@ function actualizarJuego() {
     if (juego.pantalla !== "jugando") return;
     if (juego.juegoCompletado) return;
     
+    // SI HAY TRIVIA ACTIVA, NO ACTUALIZAR NADA
+    if (triviaActiva) return;
+    
+    // SOLO actualizar si el juego no está en pausa
     if (!juego.juegoPausado && juegoActivo) {
         dino.actualizar();
         sueloX -= velocidadJuego;
@@ -762,14 +762,16 @@ function actualizarJuego() {
             obs.actualizar(velocidadJuego);
             const distancia = Math.abs(obs.x - dino.x);
             
-           if (!triviaActiva && obs.preguntaAsignada && distancia < 100 && distancia > 15 && !juego.juegoPausado && !juego.juegoCompletado && juegoActivo)  {
+            // ACTIVAR TRIVIA (solo si el obstáculo tiene pregunta)
+            if (obs.preguntaAsignada && distancia < 100 && distancia > 15 && !triviaActiva && !juego.juegoPausado) {
                 juego.juegoPausado = true;
                 triviaActiva = true;
                 obstaculoEnPausa = obs;
                 triviaModal = new TriviaModal(obs, dino);
-                return;
+                return; // SALIR - no procesar colisión este frame
             }
             
+            // DETECTAR COLISIÓN
             const rectDino = dino.obtenerRect();
             const rectObs = obs.obtenerRect();
             
@@ -778,27 +780,18 @@ function actualizarJuego() {
                 rectDino.y < rectObs.y + rectObs.alto &&
                 rectDino.y + rectDino.alto > rectObs.y) {
                 
-                // COLISIÓN DETECTADA
-                if (!juego.puedeEsquivar) {
-                    juegoActivo = false;
-                    juego.pantalla = "gameover";
-                    juego.errorShake = 12;
-                    if (juego.puntuacion > juego.record) {
-                        juego.record = juego.puntuacion;
-                        guardarProgreso();
-                    }
-                    return;
-                } else if (!obs.preguntaAsignada) {
-                    juegoActivo = false;
-                    juego.pantalla = "gameover";
-                    if (juego.puntuacion > juego.record) {
-                        juego.record = juego.puntuacion;
-                        guardarProgreso();
-                    }
-                    return;
+                // COLISIÓN - GAME OVER
+                juegoActivo = false;
+                juego.pantalla = "gameover";
+                juego.errorShake = 12;
+                if (juego.puntuacion > juego.record) {
+                    juego.record = juego.puntuacion;
+                    guardarProgreso();
                 }
+                return;
             }
             
+            // ELIMINAR OBSTÁCULOS FUERA DE PANTALLA
             if (obs.fueraDePantalla()) {
                 obstaculos.splice(i, 1);
                 i--;
@@ -808,10 +801,6 @@ function actualizarJuego() {
         juego.puntuacion += 1;
     }
 }
-
-// ============================================
-// FUNCIÓN PROCESAR RESPUESTA TRIVIA (CORREGIDA)
-// ============================================
 // ============================================
 // FUNCIÓN PROCESAR RESPUESTA TRIVIA (CORREGIDA TOTALMENTE)
 // ============================================
@@ -827,9 +816,29 @@ function procesarRespuestaTrivia() {
     
     if (resultado === 'correcto') {
         juego.respuestasCorrectas++;
-        juego.puedeEsquivar = true;
         marcarPreguntaRespondida(preguntaId);
         
+        // ELIMINAR EL OBSTÁCULO
+        const index = obstaculos.indexOf(obstaculo);
+        if (index !== -1) {
+            obstaculos.splice(index, 1);
+        }
+        
+        // EFECTOS VISUALES
+        reproducirAcierto();
+        juego.confetti = crearConfetti(26);
+        mostrarMensaje('✅ RESPUESTA CORRECTA');
+        
+        // DESBLOQUEAR SOMBREROS
+        const desbloqueados = juego.sombreros.filter(s => s.desbloqueado).length;
+        if (juego.respuestasCorrectas >= desbloqueados * 2 && desbloqueados < SOMBREROS.length) {
+            juego.sombreros[desbloqueados].desbloqueado = true;
+            mostrarMensaje(`🎉 NUEVO SOMBRERO: ${juego.sombreros[desbloqueados].nombre} 🎉`);
+            actualizarPanelSombreros();
+            guardarProgreso();
+        }
+        
+        // VERIFICAR SI COMPLETÓ EL JUEGO
         if (juego.respuestasCorrectas >= TOTAL_PREGUNTAS) {
             terminarJuegoPorCompletar();
             juego.juegoPausado = false;
@@ -839,59 +848,30 @@ function procesarRespuestaTrivia() {
             return;
         }
         
-        if (obstaculo) {
-            if (obstaculo.tipo === 'pajaro') {
-                dino.agachadoAutomatico();
-            } else {
-                dino.saltoAutomatico();
-            }
-        }
-        
-        // ELIMINAR EL OBSTÁCULO SOLO SI LA RESPUESTA ES CORRECTA
-        const index = obstaculos.indexOf(obstaculoEnPausa);
-        if (index !== -1) {
-            obstaculos.splice(index, 1);
-        }
-        
-        const desbloqueados = juego.sombreros.filter(s => s.desbloqueado).length;
-        reproducirAcierto();
-        juego.confetti = crearConfetti(26);
-        mostrarMensaje('✅ RESPUESTA CORRECTA');
-        
-        if (juego.respuestasCorrectas >= desbloqueados * 2 && desbloqueados < SOMBREROS.length) {
-            juego.sombreros[desbloqueados].desbloqueado = true;
-            mostrarMensaje(`🎉 NUEVO SOMBRERO: ${juego.sombreros[desbloqueados].nombre} 🎉`);
-            actualizarPanelSombreros();
-            guardarProgreso();
-        }
-        
-        // REANUDAR JUEGO
-        juego.juegoPausado = false;
-        triviaActiva = false;
-        triviaModal = null;
-        obstaculoEnPausa = null;
-        
     } else if (resultado === 'incorrecto') {
         juego.respuestasIncorrectas++;
         marcarPreguntaRespondida(preguntaId);
         reproducirError();
+        juego.errorShake = 12;
+        mostrarMensaje('❌ RESPUESTA INCORRECTA');
         
-        // IMPORTANTE: NO cambiar juego.puedeEsquivar aquí
-        // El dinosaurio DEBE poder chocar con el obstáculo
-        
-        // CERRAR EL MODAL
-        triviaActiva = false;
-        triviaModal = null;
-        
-        // REANUDAR EL JUEGO INMEDIATAMENTE
-        juego.juegoPausado = false;
-        
-        // EL OBSTÁCULO SIGUE AHÍ - el dinosaurio chocará en el siguiente frame
-        obstaculoEnPausa = null;
-        
-        // Pequeño efecto visual de error
-        juego.errorShake = 8;
+        // NO eliminar el obstáculo - debe causar colisión
+        // El obstáculo sigue en el array obstaculos
     }
+    
+    // LIMPIAR ESTADO DE TRIVIA - ESTO ES CRÍTICO
+    triviaActiva = false;
+    triviaModal = null;
+    obstaculoEnPausa = null;
+    juego.juegoPausado = false;  // REANUDAR EL JUEGO SIEMPRE
+    
+    // Pequeño delay para evitar detección múltiple
+    setTimeout(() => {
+        if (juego.pantalla === "jugando" && !juego.juegoTerminado) {
+            // Asegurar que el juego está activo
+            juegoActivo = true;
+        }
+    }, 10);
 }
 
 // ============================================
@@ -1243,15 +1223,15 @@ document.addEventListener('keydown', (e) => {
         }
         
         if (triviaActiva && triviaModal && !respuestaEnProceso) {
-            if (tecla === 'Enter' || tecla === 'z' || tecla === 'Z') {
-                e.preventDefault();
-                respuestaEnProceso = true;
-                if (triviaModal.responder()) {
-                    procesarRespuestaTrivia();
-                }
-                setTimeout(() => { respuestaEnProceso = false; }, 200);
-            }
-        } else if (!juego.juegoPausado && !juego.juegoCompletado && juegoActivo) {
+    if (tecla === 'Enter' || tecla === 'z' || tecla === 'Z') {
+        e.preventDefault();
+        respuestaEnProceso = true;
+        if (triviaModal.responder()) {
+            procesarRespuestaTrivia();
+        }
+        setTimeout(() => { respuestaEnProceso = false; }, 200);
+    }
+} else if (!juego.juegoPausado && !juego.juegoCompletado && juegoActivo) {
             if (tecla === 'ArrowUp' || tecla === ' ') {
                 e.preventDefault();
                 dino.saltar();
