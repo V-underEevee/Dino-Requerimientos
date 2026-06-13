@@ -809,6 +809,9 @@ function actualizarJuego() {
     }
 }
 
+// ============================================
+// FUNCIÓN PROCESAR RESPUESTA TRIVIA (CORREGIDA)
+// ============================================
 function procesarRespuestaTrivia() {
     // EVITAR PROCESAMIENTO MÚLTIPLE
     if (!triviaModal || triviaModal.procesado) return;
@@ -858,22 +861,34 @@ function procesarRespuestaTrivia() {
             guardarProgreso();
         }
         
+        // REANUDAR JUEGO
+        juego.juegoPausado = false;
+        triviaActiva = false;
+        triviaModal = null;
+        obstaculoEnPausa = null;
+        
     } else if (resultado === 'incorrecto') {
         juego.respuestasIncorrectas++;
         juego.puedeEsquivar = false;
         marcarPreguntaRespondida(preguntaId);
         juego.errorShake = 12;
         reproducirError();
+        
+        // IMPORTANTE: REANUDAR EL JUEGO INMEDIATAMENTE
+        // El obstáculo DEBE seguir moviéndose
+        juego.juegoPausado = false;  // ← CLAVE: reanudar el juego
+        triviaActiva = false;
+        triviaModal = null;
+        obstaculoEnPausa = null;
+        
+        // NO eliminar el obstáculo - el dinosaurio chocará con él
+        // NO terminar el juego - esperar a la colisión
+    }
+}
         // LA PREGUNTA YA DESAPARECIÓ (visible = false en responder())
         // NO terminar el juego - el dinosaurio chocará con este mismo obstáculo
-    }
     
-    // LIMPIAR TRIVIA
-    juego.juegoPausado = false;
-    triviaActiva = false;
-    triviaModal = null;
-    obstaculoEnPausa = null;
-}
+    
 
 // ============================================
 // DIBUJADO
