@@ -762,7 +762,7 @@ function actualizarJuego() {
             obs.actualizar(velocidadJuego);
             const distancia = Math.abs(obs.x - dino.x);
             
-            if (!triviaActiva && obs.preguntaAsignada && distancia < 100 && distancia > 15 && !juego.juegoPausado && !juego.juegoCompletado && juegoActivo) {
+           if (!triviaActiva && obs.preguntaAsignada && distancia < 100 && distancia > 15 && !juego.juegoPausado && !juego.juegoCompletado && juegoActivo)  {
                 juego.juegoPausado = true;
                 triviaActiva = true;
                 obstaculoEnPausa = obs;
