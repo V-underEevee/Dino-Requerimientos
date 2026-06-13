@@ -812,6 +812,9 @@ function actualizarJuego() {
 // ============================================
 // FUNCIÓN PROCESAR RESPUESTA TRIVIA (CORREGIDA)
 // ============================================
+// ============================================
+// FUNCIÓN PROCESAR RESPUESTA TRIVIA (CORREGIDA TOTALMENTE)
+// ============================================
 function procesarRespuestaTrivia() {
     // EVITAR PROCESAMIENTO MÚLTIPLE
     if (!triviaModal || triviaModal.procesado) return;
@@ -862,7 +865,7 @@ function procesarRespuestaTrivia() {
             guardarProgreso();
         }
         
-        // REANUDAR JUEGO NORMALMENTE
+        // REANUDAR JUEGO
         juego.juegoPausado = false;
         triviaActiva = false;
         triviaModal = null;
@@ -870,33 +873,24 @@ function procesarRespuestaTrivia() {
         
     } else if (resultado === 'incorrecto') {
         juego.respuestasIncorrectas++;
-        juego.puedeEsquivar = false;
         marcarPreguntaRespondida(preguntaId);
-        juego.errorShake = 12;
         reproducirError();
         
-        // IMPORTANTE: NO reanudar el juego inmediatamente
-        // El juego DEBE permanecer en pausa hasta que ocurra la colisión
-        // Pero necesitamos que el obstáculo SIGA EXISTIENDO
+        // IMPORTANTE: NO cambiar juego.puedeEsquivar aquí
+        // El dinosaurio DEBE poder chocar con el obstáculo
         
-        // MANTENER el obstáculo en el array para que ocurra la colisión
-        // NO eliminar el obstáculo
-        
-        // CERRAR EL MODAL DE TRIVIA
+        // CERRAR EL MODAL
         triviaActiva = false;
         triviaModal = null;
         
-        // El juego sigue en pausa (juego.juegoPausado = true)
-        // En el próximo frame, se detectará la colisión
+        // REANUDAR EL JUEGO INMEDIATAMENTE
+        juego.juegoPausado = false;
+        
+        // EL OBSTÁCULO SIGUE AHÍ - el dinosaurio chocará en el siguiente frame
         obstaculoEnPausa = null;
         
-        // El juego se reanudará automáticamente en el siguiente frame
-        // pero como juego.puedeEsquivar es false, la colisión ocurrirá
-        setTimeout(() => {
-            if (juego.juegoPausado && !juego.juegoTerminado) {
-                juego.juegoPausado = false;
-            }
-        }, 50);
+        // Pequeño efecto visual de error
+        juego.errorShake = 8;
     }
 }
 
