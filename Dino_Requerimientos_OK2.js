@@ -864,12 +864,21 @@ function procesarRespuestaTrivia() {
             guardarProgreso();
         }
     } else if (resultado === 'incorrecto') {
-        juego.respuestasIncorrectas++;
-        juego.puedeEsquivar = false;
-        marcarPreguntaRespondida(preguntaId);
-        juego.errorShake = 12;
-        reproducirError();
+    juego.respuestasIncorrectas++;
+    marcarPreguntaRespondida(preguntaId);
+    
+    // TEMBLOR
+    juego.errorShake = 12;
+    reproducirError();      // Opcional
+    
+    // GAME OVER INMEDIATO
+    juegoActivo = false;
+    juego.pantalla = "gameover";
+    if (juego.puntuacion > juego.record) {
+        juego.record = juego.puntuacion;
+        guardarProgreso();
     }
+}
     
     juego.juegoPausado = false;
     triviaActiva = false;
